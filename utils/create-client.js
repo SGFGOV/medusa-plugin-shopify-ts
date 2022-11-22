@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.createClient = void 0;
 const shopify_api_1 = __importDefault(require("@shopify/shopify-api"));
 const createClient = (options) => {
-    const { domain, password } = options;
-    return new shopify_api_1.default.Clients.Rest(`${domain}.myshopify.com`, password);
+    const { domain, api_key } = options;
+    return new shopify_api_1.default.Clients.Rest(`${domain}.myshopify.com`, api_key);
 };
 exports.createClient = createClient;

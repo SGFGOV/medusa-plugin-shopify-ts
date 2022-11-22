@@ -1,44 +1,58 @@
-import { DataType } from "@shopify/shopify-api"
-import { BaseService } from "medusa-interfaces"
-import { createClient } from "../utils/create-client"
-import { pager } from "../utils/pager"
+import { DataType } from "@shopify/shopify-api";
+import { RestClient } from "@shopify/shopify-api/dist/clients/rest";
+import { ClientOptions } from "interfaces/interfaces";
+import { BaseService } from "medusa-interfaces";
+import { createClient } from "../utils/create-client";
+import { pager } from "../utils/pager";
 
 class ShopifyClientService extends BaseService {
-  options: any
-  client_: any
+  options: ClientOptions;
+  defaultClient_: RestClient;
   // eslint-disable-next-line no-empty-pattern
-  constructor({}, options) {
-    super()
+  constructor({}: any, options: ClientOptions) {
+    super();
 
-    this.options = options
+    this.options = options;
 
     /** @private @const {ShopifyRestClient} */
-    this.client_ = createClient(this.options)
+    this.defaultClient_ = createClient(this.options);
   }
 
-  get(params) {
-    return this.client_.get(params)
+  static createClient(options: ClientOptions): RestClient {
+    return createClient(options);
   }
 
-  async list(path, extraHeaders = null, extraQuery = {}) {
-    return await pager(this.client_, path, extraHeaders, extraQuery)
+  get(params: any, client = this.defaultClient_): any {
+    return client.get(params);
   }
 
-  delete(params) {
-    return this.client_.delete(params)
+  async list(
+    path: string,
+    extraHeaders = null,
+    extraQuery = {},
+    client = this.defaultClient_
+  ): Promise<any> {
+    return await pager(client, path, extraHeaders, extraQuery);
   }
 
-  post(params) {
-    return this.client_.post({
+  delete(params: any, client = this.defaultClient_): any {
+    return client.delete(params);
+  }
+
+  post(
+    params: { path: any; body: any; type?: DataType },
+    client = this.defaultClient_
+  ): any {
+    return client.post({
       path: params.path,
-      body: params.body,
+      data: params.body,
       type: DataType.JSON,
-    })
+    });
   }
 
-  put(params) {
-    return this.client_.post(params)
+  put(params: any, client = this.defaultClient_): any {
+    return client.post(params);
   }
 }
 
-export default ShopifyClientService
+export default ShopifyClientService;

@@ -1,10 +1,13 @@
-import { medusaProducts } from "./test-products"
+import { medusaProducts } from "./test-products";
 
 export const ShopifyProductServiceMock = {
   withTransaction: function () {
-    return this
+    return this;
   },
-  create: jest.fn().mockImplementation((_data) => {
-    return Promise.resolve(medusaProducts.ipod)
+  create: jest.fn().mockImplementation((_data, store_id) => {
+    const result = store_id
+      ? { ...medusaProducts.ipod, store_id }
+      : medusaProducts.ipod;
+    return Promise.resolve(result);
   }),
-}
+};

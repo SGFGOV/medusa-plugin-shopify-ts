@@ -1,12 +1,12 @@
-import { ProductStatus } from "@medusajs/medusa"
+import { ProductStatus } from "@medusajs/medusa";
 
 export const medusaProducts = {
   ipod: {
     id: "prod_ipod",
     title: "IPod Nano - 8GB",
     subtitle: null,
-    profile:"",
-              sales_channels:["web"],
+    profile: "",
+    sales_channels: ["web"],
     description:
       "<p>It's the small iPod with one very big idea: Video. Now the world's most popular music player, available in 4GB and 8GB models, lets you enjoy TV shows, movies, video podcasts, and more. The larger, brighter display means amazing picture quality. In six eye-catching colors, iPod nano is stunning all around. And with models starting at just $149, little speaks volumes.</p>",
     handle: "ipod-nano",
@@ -15,33 +15,30 @@ export const medusaProducts = {
     images: [
       {
         id: "img_01FHZ9ZFC4SP5ME8T18SW47R7S",
-        url:
-          "https://cdn.shopify.com/s/files/1/0006/9093/3842/products/ipod-nano.png?v=1633120966",
+        url: "https://cdn.shopify.com/s/files/1/0006/9093/3842/products/ipod-nano.png?v=1633120966",
         created_at: "2021-10-14T11:46:10.391Z",
         updated_at: "2021-10-14T11:46:10.391Z",
         deleted_at: null,
         metadata: null,
-        beforeInsert:0
+        beforeInsert: 0,
       },
       {
         id: "img_01FHZ9ZFC4SK54GE072FHMQ5XT",
-        url:
-          "https://cdn.shopify.com/s/files/1/0006/9093/3842/products/ipod-nano-2.png?v=1633120966",
+        url: "https://cdn.shopify.com/s/files/1/0006/9093/3842/products/ipod-nano-2.png?v=1633120966",
         created_at: "2021-10-14T11:46:10.391Z",
         updated_at: "2021-10-14T11:46:10.391Z",
         deleted_at: null,
         metadata: null,
-        beforeInsert:1
+        beforeInsert: 1,
       },
       {
         id: "img_01FHZ9ZFC44EKQPVWK76HBZT0S",
-        url:
-          "https://cdn.shopify.com/s/files/1/0006/9093/3842/products/ipod-nano.png?v=1633120966",
+        url: "https://cdn.shopify.com/s/files/1/0006/9093/3842/products/ipod-nano.png?v=1633120966",
         created_at: "2021-10-14T11:46:10.391Z",
         updated_at: "2021-10-14T11:46:10.391Z",
         deleted_at: null,
         metadata: null,
-        beforeInsert:2,
+        beforeInsert: 2,
       },
     ],
     thumbnail:
@@ -55,7 +52,7 @@ export const medusaProducts = {
         updated_at: "2021-10-14T11:46:10.391Z",
         deleted_at: null,
         metadata: null,
-        beforeInsert:0,
+        beforeInsert: 0,
       },
     ],
     variants: [
@@ -318,7 +315,7 @@ export const medusaProducts = {
     deleted_at: null,
     metadata: null,
   },
-}
+};
 
 const shopifyIpod = {
   id: "shopify_ipod",
@@ -505,8 +502,7 @@ const shopifyIpod = {
       alt: null,
       width: 123,
       height: 456,
-      src:
-        "https://cdn.shopify.com/s/files/1/0006/9093/3842/products/ipod-nano.png?v=1633120966",
+      src: "https://cdn.shopify.com/s/files/1/0006/9093/3842/products/ipod-nano.png?v=1633120966",
       variant_ids: [],
       admin_graphql_api_id: "gid://shopify/ProductImage/850703190",
     },
@@ -519,8 +515,7 @@ const shopifyIpod = {
       alt: null,
       width: 123,
       height: 456,
-      src:
-        "https://cdn.shopify.com/s/files/1/0006/9093/3842/products/ipod-nano-2.png?v=1633120966",
+      src: "https://cdn.shopify.com/s/files/1/0006/9093/3842/products/ipod-nano-2.png?v=1633120966",
       variant_ids: [808950810],
       admin_graphql_api_id: "gid://shopify/ProductImage/562641783",
     },
@@ -533,8 +528,7 @@ const shopifyIpod = {
       alt: null,
       width: 123,
       height: 456,
-      src:
-        "https://cdn.shopify.com/s/files/1/0006/9093/3842/products/ipod-nano.png?v=1633120966",
+      src: "https://cdn.shopify.com/s/files/1/0006/9093/3842/products/ipod-nano.png?v=1633120966",
       variant_ids: [],
       admin_graphql_api_id: "gid://shopify/ProductImage/378407906",
     },
@@ -548,12 +542,11 @@ const shopifyIpod = {
     alt: null,
     width: 123,
     height: 456,
-    src:
-      "https://cdn.shopify.com/s/files/1/0006/9093/3842/products/ipod-nano.png?v=1633120966",
+    src: "https://cdn.shopify.com/s/files/1/0006/9093/3842/products/ipod-nano.png?v=1633120966",
     variant_ids: [],
     admin_graphql_api_id: "gid://shopify/ProductImage/850703190",
   },
-}
+};
 
 export const shopifyProducts = {
   ipod: shopifyIpod,
@@ -582,4 +575,4 @@ export const shopifyProducts = {
       { ...shopifyIpod.variants[3], title: "Black / 16GB", option2: "16GB" },
     ],
   },
-}
+};

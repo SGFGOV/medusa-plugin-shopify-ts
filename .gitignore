@@ -15,7 +15,9 @@ models/
 subscribers/
 migrations/
 loaders/
+interfaces/
 index.*
+
 
 !src/**
 

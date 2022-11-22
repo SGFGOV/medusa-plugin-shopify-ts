@@ -38,6 +38,7 @@ Object {
   },
   "profile_id": undefined,
   "status": "proposed",
+  "store_id": undefined,
   "tags": Array [
     Object {
       "value": "Emotive",
