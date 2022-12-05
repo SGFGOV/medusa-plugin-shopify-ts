@@ -7,7 +7,7 @@ export const ProductServiceMock = {
   create: jest.fn().mockImplementation((data) => {
     if (data.handle === "ipod-nano") {
       return Promise.resolve(medusaProducts.ipod);
-    }
+    } 
   }),
   update: jest.fn().mockImplementation((_id, _update) => {
     return Promise.resolve(medusaProducts.ipod);

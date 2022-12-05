@@ -12,3 +12,4 @@ function buildQuery(query) {
     return path;
 }
 exports.buildQuery = buildQuery;
+//# sourceMappingURL=build-query.js.map

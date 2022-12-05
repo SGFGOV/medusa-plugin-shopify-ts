@@ -1,12 +1,9 @@
 import {
   Product,
-  ProductCollectionService,
   ProductService,
   ProductVariantService,
   ShippingProfileService,
-  StoreService,
 } from "@medusajs/medusa";
-import { ProductRepository } from "@medusajs/medusa/dist/repositories/product";
 import { Logger } from "@medusajs/medusa/dist/types/global";
 import { MockManager } from "medusa-test-utils";
 import ShopifyClientService from "services/shopify-client";

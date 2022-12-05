@@ -1,19 +1,34 @@
-export async function pager(
-  client,
-  path,
+import { Logger } from "@medusajs/medusa/dist/types/global";
+import { sleep } from "@medusajs/medusa/dist/utils/sleep";
+import {
+  ShopifyImportCallBack,
+  ShopifyImportRequest,
+} from "interfaces/interfaces";
+import { RestClient } from "@shopify/shopify-api/dist/clients/rest";
+import ShopifyService from "services/shopify";
+
+export async function pager<ShopifyData>(
+  shopifyService: ShopifyService,
+  client: RestClient,
+  path: string,
+  shopifyImportRequest: ShopifyImportRequest,
+  userId: string,
   extraHeaders = null,
-  extraQuery = {}
-): Promise<any[]> {
+  extraQuery = {},
+  logger?: Logger,
+  gotPageCallBack?: ShopifyImportCallBack
+): Promise<ShopifyData[]> {
   let objects = [];
   let nextPage = null;
   let hasNext = true;
+  let pageCount = 0;
 
   while (hasNext) {
     const params = {
       path,
       query: { page_info: nextPage },
     };
-
+    logger?.info(`fetching page ${pageCount++}`);
     if (extraHeaders) {
       Object.assign(params, { extraHeaders: extraHeaders });
     }
@@ -27,6 +42,8 @@ export async function pager(
     }
 
     const response = await client.get(params);
+    /** limiting throttling */
+    await sleep(600);
 
     objects = [...objects, ...response.body[path]];
 
@@ -40,7 +57,25 @@ export async function pager(
     } else {
       hasNext = false;
     }
+    if (gotPageCallBack) {
+      await gotPageCallBack(
+        shopifyService,
+        objects,
+        shopifyImportRequest,
+        userId,
+        path
+      );
+    }
+    logger?.debug(`${JSON.stringify(objects)}`);
+    if (
+      shopifyImportRequest.max_num_products &&
+      objects?.length >= shopifyImportRequest.max_num_products
+    ) {
+      logger?.info(`completed fetching ${pageCount}`);
+      return objects.slice(0, shopifyImportRequest.max_num_products);
+    }
   }
+  logger?.info(`completed fetching ${pageCount}`);
 
   return objects;
 }

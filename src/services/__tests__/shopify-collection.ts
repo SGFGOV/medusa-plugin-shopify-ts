@@ -1,41 +1,50 @@
-import { MockManager } from "medusa-test-utils"
-import ShopifyCollectionService from "../shopify-collection"
-import { ProductCollectionServiceMock } from "../__mocks__/product-collection"
-import { ShopifyProductServiceMock } from "../__mocks__/shopify-product"
-import { medusaProducts } from "../__mocks__/test-products"
-import { Logger } from "@medusajs/medusa/dist/types/global"
-import { ProductServiceMock } from "../__mocks__/product-service"
-import { ProductCollectionService, ProductService, StoreService } from "@medusajs/medusa"
-import { ProductRepository } from "@medusajs/medusa/dist/repositories/product"
-import ShopifyProductService from "../shopify-product"
-import LoggerMock from "../__mocks__/logger"
-import {StoreServiceMock} from "../__mocks__/store-service"
+import { MockManager } from "medusa-test-utils";
+import ShopifyCollectionService from "../shopify-collection";
+import { ProductCollectionServiceMock } from "../__mocks__/product-collection";
+import { ShopifyProductServiceMock } from "../__mocks__/shopify-product";
+import { medusaProducts } from "../__mocks__/test-products";
+import { Logger } from "@medusajs/medusa/dist/types/global";
+import { ProductServiceMock } from "../__mocks__/product-service";
+import {
+  ProductCollectionService,
+  ProductService,
+  StoreService,
+} from "@medusajs/medusa";
+import { ProductRepository } from "@medusajs/medusa/dist/repositories/product";
+import ShopifyProductService from "../shopify-product";
+import LoggerMock from "../__mocks__/logger";
+import { StoreServiceMock } from "../__mocks__/store-service";
 
-let mockedLogger: jest.Mocked<Logger> = LoggerMock as any;
+const mockedLogger: jest.Mocked<Logger> = LoggerMock as any;
 
-let mockedProductService: jest.Mocked<ProductService> = ProductServiceMock as any;
+const mockedProductService: jest.Mocked<ProductService> =
+  ProductServiceMock as any;
 
-
-let mockedProductCollectionService: jest.Mocked<ProductCollectionService> = ProductCollectionServiceMock as any;
-let mockedShopifyProductService: jest.Mocked<ShopifyProductService> = ShopifyProductServiceMock as any;
-let mockedStoreService: jest.Mocked<StoreService> = StoreServiceMock as any;
-let mockedProductRepostiry: jest.Mocked<ProductRepository>;
+const mockedProductCollectionService: jest.Mocked<ProductCollectionService> =
+  ProductCollectionServiceMock as any;
+const mockedShopifyProductService: jest.Mocked<ShopifyProductService> =
+  ShopifyProductServiceMock as any;
+const mockedStoreService: jest.Mocked<StoreService> = StoreServiceMock as any;
+let mockedProductRepository: jest.Mocked<ProductRepository>;
 
 describe("ShopifyCollectionService", () => {
   describe("create", () => {
-    const shopifyCollectionService = new ShopifyCollectionService({
-      manager: MockManager,
-      shopifyProductService: mockedShopifyProductService,
-      productCollectionService: mockedProductCollectionService,
-      productService:mockedProductService,
-      storeService:mockedStoreService,
-      productRepository:mockedProductRepostiry,
-      logger:mockedLogger
-    },{})
+    const shopifyCollectionService = new ShopifyCollectionService(
+      {
+        manager: MockManager,
+        shopifyProductService: mockedShopifyProductService,
+        productCollectionService: mockedProductCollectionService,
+        productService: mockedProductService,
+        storeService: mockedStoreService,
+        productRepository: mockedProductRepository,
+        logger: mockedLogger,
+      },
+      {}
+    );
 
     beforeEach(async () => {
-      jest.clearAllMocks()
-    })
+      jest.clearAllMocks();
+    });
 
     it("creates a collection and adds products", async () => {
       const collects = [
@@ -48,7 +57,7 @@ describe("ShopifyCollectionService", () => {
           sort_value: "0000000002",
           updated_at: "2018-04-25T13:51:12-04:00",
         },
-      ]
+      ];
       const collections = [
         {
           id: "spring",
@@ -56,19 +65,19 @@ describe("ShopifyCollectionService", () => {
           title: "Spring",
           handle: "spring",
         },
-      ]
-      const products = [medusaProducts.ipod]
+      ];
+      const products = [medusaProducts.ipod];
 
       const results = await shopifyCollectionService.createCustomCollections(
         collects,
         collections,
         products
-      )
+      );
 
       expect(
         ProductCollectionServiceMock.retrieveByHandle
-      ).toHaveBeenCalledTimes(1)
-      expect(ProductCollectionServiceMock.create).toHaveBeenCalledTimes(1)
+      ).toHaveBeenCalledTimes(1);
+      expect(ProductCollectionServiceMock.create).toHaveBeenCalledTimes(1);
       expect(results).toEqual([
         {
           id: "col_spring",
@@ -79,8 +88,8 @@ describe("ShopifyCollectionService", () => {
             sh_body: "spring collection",
           },
         },
-      ])
-    })
+      ]);
+    });
 
     it("normalizes a custom collection from Shopify", () => {
       const shopifyCollection = {
@@ -88,13 +97,13 @@ describe("ShopifyCollectionService", () => {
         body_html: "spring collection",
         title: "Spring",
         handle: "spring",
-      }
+      };
 
       const normalized =
-        shopifyCollectionService.normalizeCustomCollection_(shopifyCollection)
+        shopifyCollectionService.normalizeCustomCollection_(shopifyCollection);
 
-      expect(normalized).toMatchSnapshot()
-    })
+      expect(normalized).toMatchSnapshot();
+    });
 
     it("normalizes a smart collection from Shopify", () => {
       const shopifyCollection = {
@@ -116,13 +125,12 @@ describe("ShopifyCollectionService", () => {
         ],
         published_scope: "web",
         admin_graphql_api_id: "gid://shopify/Collection/1063001322",
-      }
+      };
 
       const normalized =
-        shopifyCollectionService.normalizeCustomCollection_(shopifyCollection)
+        shopifyCollectionService.normalizeCustomCollection_(shopifyCollection);
 
-      expect(normalized).toMatchSnapshot()
-    })
-  })
-})
-
+      expect(normalized).toMatchSnapshot();
+    });
+  });
+});

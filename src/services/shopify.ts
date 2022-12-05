@@ -1,17 +1,27 @@
 /* eslint-disable valid-jsdoc */
 import {
+  BatchJob,
+  BatchJobService,
+  BatchJobStatus,
+  EventBusService,
   ShippingProfileService,
   Store,
   StoreService,
   TransactionBaseService,
+  User,
+  UserService,
 } from "@medusajs/medusa";
-import { Logger } from "@medusajs/medusa/dist/types/global";
+import { StoreRepository } from "@medusajs/medusa/dist/repositories/store";
+import { ConfigModule, Logger } from "@medusajs/medusa/dist/types/global";
 import {
   ClientOptions,
-  ShopifyFetchRequest,
+  FetchedShopifyData,
+  ShopifyData,
+  ShopifyImportCallBack,
   ShopifyImportRequest,
+  ShopifyRequest,
 } from "interfaces/interfaces";
-import { BaseService } from "medusa-interfaces";
+import { MedusaError } from "medusa-core-utils";
 import { EntityManager } from "typeorm";
 import { INCLUDE_PRESENTMENT_PRICES } from "../utils/const";
 import ShopifyClientService from "./shopify-client";
@@ -19,33 +29,53 @@ import ShopifyCollectionService from "./shopify-collection";
 import ShopifyProductService from "./shopify-product";
 
 export interface ShopifyServiceParams {
-  manager_: EntityManager;
+  manager: EntityManager;
+  eventBusService: EventBusService;
   shippingProfileService: ShippingProfileService;
   storeService: StoreService;
   shopifyProductService: ShopifyProductService;
   shopifyCollectionService: ShopifyCollectionService;
   shopifyClientService: ShopifyClientService;
+  storeRepository: typeof StoreRepository;
+  userService: UserService;
+  batchJobService: BatchJobService;
   logger: Logger;
+  configModule: ConfigModule;
 }
+
+export type BatchActionCallBack = (BatchJob) => Promise<any>;
 
 class ShopifyService extends TransactionBaseService {
   protected manager_: EntityManager;
   protected transactionManager_: EntityManager;
+  storeRepository: typeof StoreRepository;
   options: ClientOptions;
   shippingProfileService_: ShippingProfileService;
   shopifyProductService_: ShopifyProductService;
   shopifyCollectionService_: ShopifyCollectionService;
-  defaultClient_: ShopifyClientService;
-  store_: StoreService;
+  shopifyClientService_: ShopifyClientService;
+  storeService_: StoreService;
   logger: Logger;
   buildService_: any;
-  constructor(container: ShopifyServiceParams, options) {
+  lastFetchedProducts: any;
+  lastFetchedCustomCollections: any;
+  lastFetchedSmartCollections: any;
+  batchJobService_: BatchJobService;
+
+  userService: UserService;
+  configModule: ConfigModule;
+  eventBus_: EventBusService;
+  lastFetchedSmartCollection: FetchedShopifyData;
+  lastFetchedCollects: FetchedShopifyData;
+  defaultBatchActionNotifier: BatchActionCallBack;
+
+  constructor(container: ShopifyServiceParams, options: ClientOptions) {
     super(container);
 
     this.options = options;
 
     /** @private @const {EntityManager} */
-    this.manager_ = container.manager_;
+    this.manager_ = container.manager;
     /** @private @const {ShippingProfileService} */
     this.shippingProfileService_ = container.shippingProfileService;
     /** @private @const {ShopifyProductService} */
@@ -53,222 +83,214 @@ class ShopifyService extends TransactionBaseService {
     /** @private @const {ShopifyCollectionService} */
     this.shopifyCollectionService_ = container.shopifyCollectionService;
     /** @private @const {ShopifyRestClient} */
-    this.defaultClient_ = container.shopifyClientService;
+    this.shopifyClientService_ = container.shopifyClientService;
     /** @private @const {StoreService} */
-    this.store_ = container.storeService;
+    this.storeService_ = container.storeService;
+    /** @private @const {StoreRepository} */
+    this.storeRepository = container.storeRepository;
+    /** @private @const {BatchJobService} */
+    this.batchJobService_ = container.batchJobService;
+    /** @private @const {UserService} */
+    this.userService = container.userService;
 
+    this.configModule = container.configModule;
     /** @private @const {Logger} */
     this.logger = container.logger;
+    this.eventBus_ = container.eventBusService;
   }
 
-  withTransaction(transactionManager): this {
+  withTransaction(transactionManager: EntityManager): this {
     if (!transactionManager) {
       return this;
     }
 
     const cloned = new ShopifyService(
       {
-        manager_: transactionManager,
+        manager: transactionManager,
         shippingProfileService: this.shippingProfileService_,
-        shopifyClientService: this.defaultClient_,
+        shopifyClientService: this.shopifyClientService_,
         shopifyProductService: this.shopifyProductService_,
         shopifyCollectionService: this.shopifyCollectionService_,
-        storeService: this.store_,
+        storeService: this.storeService_,
+        batchJobService: this.batchJobService_,
         logger: this.logger,
+        storeRepository: this.storeRepository,
+        userService: this.userService,
+        configModule: this.configModule,
+        eventBusService: this.eventBus_,
       },
       this.options
     );
-
-    cloned.transactionManager_ = transactionManager;
-
+    this.transactionManager_ = transactionManager;
     return cloned as this;
   }
 
-  async fetchFromShopify(shopifyFetchRequest?: ShopifyFetchRequest): Promise<{
-    products: any[];
-    customCollections: any[];
-    smartCollections: any[];
-    collects: any[];
-    client: any;
-  }> {
-    const client_ = shopifyFetchRequest
-      ? new ShopifyClientService(
-          {},
-          {
-            domain: shopifyFetchRequest.store_domain,
-            api_key: shopifyFetchRequest.api_key,
-          }
-        )
-      : this.defaultClient_;
+  async fetchFromShopifyAndProcess(
+    shopifyRequest: ShopifyRequest,
+    userId?: string,
+    gotPageCallBack?: ShopifyImportCallBack
+  ): Promise<any> {
+    (this.lastFetchedProducts =
+      await this.fetchFromShopifyAndProcessSingleCategory(
+        shopifyRequest,
+        "products",
+        userId,
+        gotPageCallBack
+      )),
+      (this.lastFetchedCustomCollections =
+        await this.fetchFromShopifyAndProcessSingleCategory(
+          shopifyRequest,
+          "custom_collections",
+          userId,
+          gotPageCallBack
+        )),
+      (this.lastFetchedSmartCollection =
+        await this.fetchFromShopifyAndProcessSingleCategory(
+          shopifyRequest,
+          userId,
+          "smart_collections",
+          gotPageCallBack
+        )),
+      (this.lastFetchedCollects =
+        await this.fetchFromShopifyAndProcessSingleCategory(
+          shopifyRequest,
+          "collects",
+          userId,
+          gotPageCallBack
+        ));
+    return {
+      products: this.lastFetchedProducts,
+      customCollections: this.lastFetchedCustomCollections,
+      smartCollections: this.lastFetchedSmartCollection,
+      collects: this.lastFetchedCollects,
+      //  client: client_,
+    };
+  }
 
-    const updatedSinceQuery = await this.getAndUpdateBuildTime_();
+  async fetchFromShopifyAndProcessSingleCategory(
+    shopifyRequest: ShopifyRequest,
+    category = "products",
+    userId?: string,
+    gotPageCallBack?: ShopifyImportCallBack
+  ): Promise<FetchedShopifyData> {
+    const client_ = this.shopifyClientService_;
+
+    const updatedSinceQuery = await this.getAndUpdateBuildTime_(
+      shopifyRequest.default_store_name
+    );
 
     await this.shippingProfileService_.createDefault();
     await this.shippingProfileService_.createGiftCardDefault();
 
-    const products = await client_.list(
-      "products",
+    return await client_.listAndImport(
+      shopifyRequest as ShopifyImportRequest,
+      this,
+      userId,
+      category,
       INCLUDE_PRESENTMENT_PRICES,
-      updatedSinceQuery
+      updatedSinceQuery,
+      gotPageCallBack,
+      client_.defaultRestClient_
     );
-
-    const customCollections = await client_.list(
-      "custom_collections",
-      null,
-      updatedSinceQuery
-    );
-
-    const smartCollections = await client_.list(
-      "smart_collections",
-      null,
-      updatedSinceQuery
-    );
-
-    const collects = await client_.list("collects", null, updatedSinceQuery);
-
-    return {
-      products,
-      customCollections,
-      smartCollections,
-      collects,
-      client: client_,
-    };
   }
 
   async importIntoStore(
-    shopifyImportRequest: ShopifyImportRequest
-  ): Promise<any> {
-    const { products, customCollections, smartCollections, collects } =
-      await this.fetchFromShopify();
-    const max_products = Math.min(
-      shopifyImportRequest?.shopify_product_ids.length,
-      shopifyImportRequest?.max_num_products,
-      products.length
-    );
-    {
-      return this.atomicPhase_(
-        async (manager) => {
-          const resolvedProducts = [];
-          for (
-            let i = 0, j = 0;
-            i < products?.length && j < max_products;
-            i++
-          ) {
-            this.logger.info(
-              `created product  ${i}/${products.length} ${products[i].handle}`
-            );
-            if (
-              shopifyImportRequest.shopify_product_ids &&
-              !shopifyImportRequest.shopify_product_ids.find(products[i].id)
-            ) {
-              continue;
-            }
-
-            const result = await this.shopifyProductService_
-              .withTransaction(manager)
-              .create(products[i], shopifyImportRequest.store_id);
-            if (result) {
-              j++;
-            }
-            resolvedProducts.push(result);
-          }
-
-          await this.shopifyCollectionService_
-            .withTransaction(manager)
-            .createCustomCollections(
-              collects,
-              customCollections,
-              resolvedProducts
-            );
-
-          await this.shopifyCollectionService_
-            .withTransaction(manager)
-            .createSmartCollections(smartCollections, resolvedProducts);
-        },
-        this.handleError,
-        this.handleWarn
+    shopifyImportRequest: ShopifyImportRequest,
+    defaultJobNotifier?: BatchActionCallBack
+  ): Promise<boolean | FetchedShopifyData> {
+    const adminUser = await this.atomicPhase_(async (transactionManager) => {
+      let adminUser: User;
+      try {
+        adminUser = await this.userService
+          .withTransaction(transactionManager)
+          .retrieveByEmail(shopifyImportRequest.medusa_store_admin_email);
+        return adminUser;
+      } catch (e) {
+        this.handleError(e);
+        return false;
+      }
+    });
+    this.defaultBatchActionNotifier = defaultJobNotifier;
+    if (adminUser) {
+      const importJobs = await this.fetchFromShopifyAndProcess(
+        shopifyImportRequest,
+        adminUser.id,
+        this.createBatchAndProcess
       );
+      return importJobs;
     }
   }
-  /**
-   * @deprecated
-   * @returns
-   */
-  async importShopify(): Promise<any> {
-    return this.atomicPhase_(
-      async (manager) => {
-        const updatedSinceQuery = await this.getAndUpdateBuildTime_();
 
-        await this.shippingProfileService_.createDefault();
-        await this.shippingProfileService_.createGiftCardDefault();
-
-        const products = await this.defaultClient_.list(
-          "products",
-          INCLUDE_PRESENTMENT_PRICES,
-          updatedSinceQuery
-        );
-
-        const customCollections = await this.defaultClient_.list(
-          "custom_collections",
-          null,
-          updatedSinceQuery
-        );
-
-        const smartCollections = await this.defaultClient_.list(
-          "smart_collections",
-          null,
-          updatedSinceQuery
-        );
-
-        const collects = await this.defaultClient_.list(
-          "collects",
-          null,
-          updatedSinceQuery
-        );
-        const breakOut = 100;
-        const resolvedProducts = [];
-        for (let i = 0; i < products?.length && i < breakOut; i++) {
-          this.logger.info(
-            `created product  ${i}/${products.length} ${products[i].handle}`
-          );
-          const result = await this.shopifyProductService_
-            .withTransaction(manager)
-            .create(products[i]);
-          resolvedProducts.push(result);
-        }
-
-        await this.shopifyCollectionService_
-          .withTransaction(manager)
-          .createCustomCollections(
-            collects,
-            customCollections,
-            resolvedProducts
-          );
-
-        await this.shopifyCollectionService_
-          .withTransaction(manager)
-          .createSmartCollections(smartCollections, resolvedProducts);
-      },
-      this.handleError,
-      this.handleWarn
-    );
+  async createBatchAndProcess(
+    self: ShopifyService,
+    shopifyData: ShopifyData[],
+    shopifyImportRequest: ShopifyImportRequest,
+    userId: string,
+    path: string
+  ): Promise<BatchJob> {
+    let job = await self.atomicPhase_(async (transactionManager) => {
+      return await self.batchJobService_
+        .withTransaction(transactionManager)
+        .create({
+          type: "shopify-import",
+          context: {
+            shopifyData,
+            shopifyImportRequest: JSON.stringify(shopifyImportRequest),
+            path,
+          },
+          created_by: userId,
+          dry_run: true,
+        });
+    });
+    job.loadStatus();
+    while (job.status != BatchJobStatus.CREATED) {
+      job.loadStatus();
+      job = await self.atomicPhase_(async (transactionManager) => {
+        return await this.batchJobService_
+          .withTransaction(transactionManager)
+          .retrieve(job.id);
+      });
+    }
+    job = await self.atomicPhase_(async (transactionManager) => {
+      return await self.batchJobService_
+        .withTransaction(transactionManager)
+        .setPreProcessingDone(job);
+    });
+    job = await self.atomicPhase_(async (transactionManager) => {
+      return await self.batchJobService_
+        .withTransaction(transactionManager)
+        .confirm(job);
+    });
+    await self.defaultBatchActionNotifier(job);
+    self.logger?.info(`${job.id}  import in progress`);
+    return job;
   }
 
-  async getAndUpdateBuildTime_(id?: string): Promise<any> {
+  async getStoreById(store_id: string): Promise<Store | undefined> {
+    const storeRepo = this.manager_.getCustomRepository(this.storeRepository);
+    const availableStore = await storeRepo.findOne({
+      id: store_id,
+    });
+
+    return availableStore;
+  }
+
+  async getStoreByName(store_name: string): Promise<Store | undefined> {
+    const storeRepo = this.manager_.getCustomRepository(this.storeRepository);
+    const availableStore = await storeRepo.findOne({
+      name: store_name,
+    });
+
+    return availableStore;
+  }
+
+  async getAndUpdateBuildTime_(name: string): Promise<any> {
     let buildtime = null;
-    let store: Store;
-    const availableStores =
-      (await this.store_.retrieve()) as unknown as Store[];
-    if (availableStores.length <= 0) {
+
+    const store: Store = await this.getStoreByName(name);
+    if (!store) {
       return {};
     }
-
-    if (id) {
-      store = availableStores.filter((store) => {
-        return store.id == id;
-      })[0];
-    }
-
     if (store.metadata?.source_shopify_bt) {
       buildtime = store.metadata.source_shopify_bt;
     }
@@ -279,7 +301,7 @@ class ShopifyService extends TransactionBaseService {
       },
     };
 
-    await this.store_.update(payload);
+    await this.storeService_.update(payload);
 
     if (!buildtime) {
       return {};
@@ -289,12 +311,12 @@ class ShopifyService extends TransactionBaseService {
       updated_at_min: buildtime,
     };
   }
-  async handleError(e): Promise<void> {
+  async handleError(e: Error): Promise<void> {
     this.logger.error("Shopify Plugin Error " + e.message);
   }
 
-  async handleWarn(e): Promise<void> {
-    this.handleWarn("Shopify Plugin Error " + e.message);
+  async handleWarn(e: Error): Promise<void> {
+    this.logger.error("Shopify Plugin Error " + e.message);
   }
 }
 

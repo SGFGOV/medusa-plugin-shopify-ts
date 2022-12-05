@@ -5,3 +5,4 @@ function parsePrice(price) {
     return parseInt(Number(price).toFixed(2)) * 100;
 }
 exports.parsePrice = parsePrice;
+//# sourceMappingURL=parse-price.js.map

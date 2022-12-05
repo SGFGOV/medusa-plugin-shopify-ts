@@ -6,3 +6,4 @@ function removeIndex(arr, obj) {
     arr.splice(index, 1);
 }
 exports.removeIndex = removeIndex;
+//# sourceMappingURL=remove-index.js.map

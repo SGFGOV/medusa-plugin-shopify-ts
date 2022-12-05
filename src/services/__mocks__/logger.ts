@@ -1,18 +1,20 @@
 const Logger = {
+  info: jest.fn((message: any, optionalParams?: any[]) => {
+    console.info(message);
+  }),
+  debug: jest.fn((message: any, optionalParams?: any[]) => {
+    console.debug(message);
+  }),
+  error: jest.fn((message: any, optionalParams?: any[]) => {
+    console.error(message);
+  }),
+  warn: jest.fn((message: any, optionalParams?: any[]) => {
+    console.warn(message);
+  }),
 
-    info: jest.fn((message: any, optionalParams?: any[]) => {
-      console.info(message);
-    },
-    ),
-    error: jest.fn((message: any, optionalParams?: any[]) => {
-      console.error(message);
-    },
-    ),
-    warn: jest.fn((message: any, optionalParams?: any[]) => {
-      console.warn(message);
-    },
-    ),
-  
-  };
-  
-  export default Logger
+  progress: jest.fn((message: any, optionalParams?: any[]) => {
+    console.log(message);
+  }),
+};
+
+export default Logger;

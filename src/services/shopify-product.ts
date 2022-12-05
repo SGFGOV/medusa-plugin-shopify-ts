@@ -328,7 +328,7 @@ class ShopifyProductService extends TransactionBaseService {
 
     await axios
       .put(
-        `https://${this.options.domain}.myshopify.com/admin/api/2021-10/products/${product.external_id}.json`,
+        `https://${this.options.store_domain}.myshopify.com/admin/api/2021-10/products/${product.external_id}.json`,
         update,
         {
           headers: {
@@ -382,7 +382,7 @@ class ShopifyProductService extends TransactionBaseService {
 
     await axios
       .put(
-        `https://${this.options.domain}.myshopify.com/admin/api/2021-10/variants/${variant.metadata.sh_id}.json`,
+        `https://${this.options.store_domain}.myshopify.com/admin/api/2021-10/variants/${variant.metadata.sh_id}.json`,
         update,
         {
           headers: {
@@ -408,7 +408,7 @@ class ShopifyProductService extends TransactionBaseService {
 
     await axios
       .delete(
-        `https://${this.options.domain}.myshopify.com/admin/api/2021-10/products/${product.external_id}/variants/${metadata.sh_id}.json`,
+        `https://${this.options.store_domain}.myshopify.com/admin/api/2021-10/products/${product.external_id}/variants/${metadata.sh_id}.json`,
         {
           headers: {
             "X-Shopify-Access-Token": this.options.api_key,

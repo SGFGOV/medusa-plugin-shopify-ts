@@ -14,9 +14,10 @@ In medusa-config.js
 {
     resolve:'medusa-plugin-shopify-ts'
     options:{
-        api_key : "<Your default shopify private app admin api key>}
-        domain: "<Your default shopify domain without the myshopify.com part for example :abc.myshopify.com will be abc>"
-        store_id: "<Your medusa store id>"
+        api_key : #"<Your default shopify private app admin api key>}
+        domain: #"<Your default shopify domain without the myshopify.com part for example :abc.myshopify.com will be abc>"
+        default_store_name: #"default_store_name"
+
     }
 }
 

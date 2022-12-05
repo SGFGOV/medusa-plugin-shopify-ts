@@ -4,5 +4,8 @@ node_modules
 .env*
 src
 coverage
+**/__mocks__/*
+**/__tests__/*
 
 tsconfig.tsbuildinfo
+*.tgz

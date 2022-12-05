@@ -1,47 +1,100 @@
+import { EventBusService, TransactionBaseService } from "@medusajs/medusa";
+import { Logger } from "@medusajs/medusa/dist/types/global";
 import { DataType } from "@shopify/shopify-api";
 import { RestClient } from "@shopify/shopify-api/dist/clients/rest";
-import { ClientOptions } from "interfaces/interfaces";
+import {
+  ClientOptions,
+  ShopifyData,
+  ShopifyImportCallBack,
+  ShopifyImportRequest,
+} from "interfaces/interfaces";
 import { BaseService } from "medusa-interfaces";
+import { EntityManager, Transaction } from "typeorm";
 import { createClient } from "../utils/create-client";
 import { pager } from "../utils/pager";
+import ShopifyService from "./shopify";
 
-class ShopifyClientService extends BaseService {
+export interface ShopifyClientServiceProps {
+  manager: EntityManager;
+  eventBusService: EventBusService;
+  logger: Logger;
+}
+
+class ShopifyClientService extends TransactionBaseService {
+  protected transactionManager_: EntityManager;
   options: ClientOptions;
-  defaultClient_: RestClient;
+  defaultRestClient_: RestClient;
+  protected eventbus_: EventBusService;
+  protected manager_: EntityManager;
+  logger: Logger;
   // eslint-disable-next-line no-empty-pattern
-  constructor({}: any, options: ClientOptions) {
-    super();
-
+  constructor(container: ShopifyClientServiceProps, options: ClientOptions) {
+    super(container);
+    const { manager, eventBusService, logger } = container;
+    this.eventbus_ = eventBusService;
+    this.manager_ = manager;
+    this.logger = logger;
+    this.transactionManager_ = manager;
     this.options = options;
 
     /** @private @const {ShopifyRestClient} */
-    this.defaultClient_ = createClient(this.options);
+    this.defaultRestClient_ =
+      this.options.defaultClient ?? createClient(this.options);
+  }
+
+  withTransaction(transactionManager?: EntityManager): this {
+    if (!transactionManager) {
+      return this;
+    }
+    const clone = new ShopifyClientService(
+      {
+        eventBusService: this.eventbus_,
+        manager: this.manager_,
+        logger: this.logger,
+      },
+      this.options
+    );
+    return clone as this;
   }
 
   static createClient(options: ClientOptions): RestClient {
-    return createClient(options);
+    return options.defaultClient ?? createClient(options);
   }
 
-  get(params: any, client = this.defaultClient_): any {
+  get(params: any, client = this.defaultRestClient_): any {
     return client.get(params);
   }
 
-  async list(
+  async listAndImport(
+    shopifyImportRequest: ShopifyImportRequest,
+    shopifyService: ShopifyService,
+    userId: string,
     path: string,
     extraHeaders = null,
     extraQuery = {},
-    client = this.defaultClient_
+    gotPageCallBack?: ShopifyImportCallBack,
+    client = this.defaultRestClient_
   ): Promise<any> {
-    return await pager(client, path, extraHeaders, extraQuery);
+    return await pager(
+      shopifyService,
+      client,
+      path,
+      shopifyImportRequest,
+      userId,
+      extraHeaders,
+      extraQuery,
+      this.logger,
+      gotPageCallBack
+    );
   }
 
-  delete(params: any, client = this.defaultClient_): any {
+  delete(params: any, client = this.defaultRestClient_): any {
     return client.delete(params);
   }
 
   post(
     params: { path: any; body: any; type?: DataType },
-    client = this.defaultClient_
+    client = this.defaultRestClient_
   ): any {
     return client.post({
       path: params.path,
@@ -50,8 +103,12 @@ class ShopifyClientService extends BaseService {
     });
   }
 
-  put(params: any, client = this.defaultClient_): any {
+  put(params: any, client = this.defaultRestClient_): any {
     return client.post(params);
+  }
+
+  setClient(defaultRestClient_: RestClient): void {
+    this.defaultRestClient_ = defaultRestClient_;
   }
 }
 
