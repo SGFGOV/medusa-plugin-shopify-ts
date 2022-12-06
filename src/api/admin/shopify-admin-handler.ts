@@ -45,7 +45,7 @@ export default (): Router => {
               max_num_products: req.body.max_num_products,
               shopify_product_ids: req.body.shopify_product_ids,
               medusa_store_admin_email: req.body.store_admin_email,
-              requestId: "",
+              requestId: idemKey.idempotency_key,
             });
           return {
             response_code: 200,
