@@ -7,7 +7,7 @@ import {
   ShopifyData,
   ShopifyImportCallBack,
   ShopifyImportRequest,
-} from "interfaces/interfaces";
+} from "interfaces/shopify-interfaces";
 import { BaseService } from "medusa-interfaces";
 import { EntityManager, Transaction } from "typeorm";
 import { createClient } from "../utils/create-client";

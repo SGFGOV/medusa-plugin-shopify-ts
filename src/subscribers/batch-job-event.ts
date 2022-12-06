@@ -15,7 +15,7 @@ export interface ContainerProps {
   strategyResolverService: StrategyResolverService;
   manager: EntityManager;
 }
-class BatchJobEventSubscriber extends BatchJobSubscriber {
+class BatchJobEventSubscriber {
   eventbusService_: EventBusService;
   batchJobService: BatchJobService;
   strategyResolverService: StrategyResolverService;
@@ -23,7 +23,7 @@ class BatchJobEventSubscriber extends BatchJobSubscriber {
   logger: Logger;
 
   constructor(readonly container: ContainerProps) {
-    super(container);
+   // super(container);
     const batchEvents = BatchJobService.Events;
     this.eventbusService_ = container.eventBusService;
     this.batchJobService = container.batchJobService;

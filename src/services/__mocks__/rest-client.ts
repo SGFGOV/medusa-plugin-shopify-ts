@@ -1,6 +1,6 @@
 import { string } from "joi";
 import mock_products from "../__fixtures__/test-data_products.fixture";
-import mock_collects from "../__fixtures__/test-data-collections.fixture";
+import mock_collects from "../__fixtures__/test-data-collection-2.fixtures";
 import mock_smart_collects from "../__fixtures__/test-data-smart-collections";
 import mock_custom_collects from "../__fixtures__/test-data-custom-collections";
 export const RestClientMock = {

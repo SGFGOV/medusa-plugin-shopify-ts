@@ -11,7 +11,7 @@ export const BatchJobRepositoryMock = {
 
   save: jest.fn().mockImplementation((data)=>{
     const job = Object.assign(new BatchJob(),data) as BatchJob
-    job.id = "mock_batch_"+randomInt(200)
+    job.id = job.id??"mock_batch_"+randomInt(200)
     eventMap.set(job.id,job)
     return Promise.resolve(eventMap.get(job.id))
   }),

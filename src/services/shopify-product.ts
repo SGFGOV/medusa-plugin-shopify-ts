@@ -14,7 +14,7 @@ import {
   CreateProductProductTagInput,
 } from "@medusajs/medusa/dist/types/product";
 import axios from "axios";
-import { ClientOptions } from "interfaces/interfaces";
+import { ClientOptions } from "interfaces/shopify-interfaces";
 import isEmpty from "lodash/isEmpty";
 import omit from "lodash/omit";
 import random from "lodash/random";

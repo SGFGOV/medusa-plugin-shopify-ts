@@ -1,23 +1,25 @@
 import {
   AbstractBatchJobStrategy,
   BatchJobService,
+  BatchJobStatus,
   ProductService,
   ProductStatus,
   StoreService,
 } from "@medusajs/medusa";
 import { Logger } from "@medusajs/medusa/dist/types/global";
 import {
-  FetchedShopifyData,
   ShopifyCollections,
   ShopifyData,
   ShopifyImportRequest,
+  ShopifyJobResultType,
+  ShopifyPath,
   ShopifyProducts,
-} from "interfaces/interfaces";
+} from "../interfaces/shopify-interfaces";
 import ShopifyService from "../services/shopify";
 import ShopifyCollectionService from "../services/shopify-collection";
 import ShopifyProductService from "../services/shopify-product";
 import { EntityManager } from "typeorm";
-import { MedusaError } from "medusa-core-utils";
+import { sleep } from "@medusajs/medusa/dist/utils/sleep";
 
 export interface ShopifyImportStrategyProps {
   batchJobService: BatchJobService;
@@ -60,11 +62,10 @@ class ShopifyImportStrategy extends AbstractBatchJobStrategy {
     const batch = await this.batchJobService_.retrieve(batchJobId);
     const retrievedShopifyData = batch.context.shopifyData as ShopifyData[];
 
-    const shopifyImportRequest = JSON.parse(
-      batch.context["shopifyImportRequest"] as string
-    ) as ShopifyImportRequest;
+    const shopifyImportRequest = batch.context
+      .shopifyImportRequest as ShopifyImportRequest;
 
-    const path = batch.context["path"] as string;
+    const path = batch.context["path"] as ShopifyPath;
 
     const result = await this.processShopifyPageData(
       retrievedShopifyData,
@@ -73,14 +74,15 @@ class ShopifyImportStrategy extends AbstractBatchJobStrategy {
     );
 
     return await this.atomicPhase_(async (transactionManager) => {
+      const jobResult: ShopifyJobResultType = {
+        advancement_count: retrievedShopifyData.length,
+        shopifyData: result,
+        path: path,
+      };
       await this.batchJobService_
         .withTransaction(transactionManager)
         .update(batchJobId, {
-          result: {
-            advancement_count: retrievedShopifyData.length,
-            data: result,
-            path: path,
-          },
+          result: jobResult,
         });
     });
   }
@@ -99,54 +101,90 @@ class ShopifyImportStrategy extends AbstractBatchJobStrategy {
           shopifyData as ShopifyProducts,
           shopifyImportRequest
         );
-        break;
       case "smart_collections":
-        if (this.collects?.length == 0) {
-          throw new MedusaError(
-            "shopify-plugin",
-            "Shopify Collections Not Fetched"
-          );
-        }
-
-        return await this.processSmartCollection(shopifyData);
-
       case "custom_collections":
-        if (this.collects?.length == 0) {
-          throw new MedusaError(
-            "shopify-plugin",
-            "Shopify Collections Not Fetched"
-          );
-        }
-        return await this.processCustomCollection(shopifyData);
-        break;
+        return await this.processCollectionType(
+          shopifyData,
+          shopifyImportRequest,
+          path
+        );
       case "collects":
         this.collects = shopifyData as ShopifyCollections;
         return this.collects;
-        break;
     }
   }
 
-  async processCustomCollection(
-    customCollections: ShopifyData[]
+  async processCollectionType(
+    theCollection: ShopifyData[],
+    shopifyImportRequest: ShopifyImportRequest,
+    collectionType: "smart_collections" | "custom_collections"
   ): Promise<ShopifyCollections> {
-    return await this.atomicPhase_(async (transactionManager) => {
-      return await this.shopifyCollectionService_
-        .withTransaction(transactionManager)
-        .createCustomCollections(
-          this.collects,
-          customCollections,
-          this.resolvedProducts
-        );
-    });
+    const products = await this.awaitPathCompletion(
+      shopifyImportRequest,
+      "products"
+    );
+    this.resolvedProducts = products;
+    this.collects = await this.awaitPathCompletion(
+      shopifyImportRequest,
+      "collects"
+    );
+    switch (collectionType) {
+      case "custom_collections":
+        return await this.atomicPhase_(async (transactionManager) => {
+          return await this.shopifyCollectionService_
+            .withTransaction(transactionManager)
+            .createCustomCollections(this.collects, theCollection, products);
+        });
+      case "smart_collections":
+        return await this.atomicPhase_(async (transactionManager) => {
+          return await await this.shopifyCollectionService_
+            .withTransaction(transactionManager)
+            .createSmartCollections(theCollection, products);
+        });
+    }
   }
 
-  async processSmartCollection(
-    smartCollections: ShopifyData[]
-  ): Promise<ShopifyCollections> {
+  async awaitPathCompletion(
+    shopifyImportRequest: ShopifyImportRequest,
+    path: ShopifyPath
+  ): Promise<any> {
+    let pathObjects = [];
+
+    let recievedPathEntries = 
+    [];
+    while (recievedPathEntries.length == 0) {
+      const batchPaths = await this.shopifyService_.getBatchTasks(
+        shopifyImportRequest.requestId
+      );
+      recievedPathEntries = batchPaths.filter((batchPath) => {
+        return batchPath.path == path;
+      });
+      if (recievedPathEntries.length > 0) {
+        break;
+      }
+      await sleep(3000);
+    }
     return await this.atomicPhase_(async (transactionManager) => {
-      return await await this.shopifyCollectionService_
-        .withTransaction(transactionManager)
-        .createSmartCollections(smartCollections, this.resolvedProducts);
+      const result = recievedPathEntries.map(async (batchPath) => {
+        let status = undefined;
+        while (status != BatchJobStatus.COMPLETED) {
+          const job = await this.batchJobService_
+            .withTransaction(transactionManager)
+            .retrieve(batchPath.batchJobId);
+          status = job.status;
+          if (status == BatchJobStatus.COMPLETED) {
+            return job.result as ShopifyJobResultType;
+          } else {
+            await sleep(1000);
+          }
+        }
+      });
+      const allProducts = await Promise.all(result);
+      allProducts.map((shopifyBatchPath) => {
+        pathObjects = pathObjects.concat(shopifyBatchPath.shopifyData);
+      });
+
+      return pathObjects;
     });
   }
 
@@ -210,7 +248,11 @@ class ShopifyImportStrategy extends AbstractBatchJobStrategy {
         if (result) {
           productCreateCount++;
         }
-        this.resolvedProducts.push(result);
+        if (this.resolvedProducts) {
+          this.resolvedProducts.push(result);
+        } else {
+          this.resolvedProducts = [result];
+        }
       }
       return this.resolvedProducts;
     });

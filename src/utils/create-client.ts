@@ -1,6 +1,6 @@
 import Shopify from "@shopify/shopify-api";
 import { RestClient } from "@shopify/shopify-api/dist/clients/rest";
-import { ClientOptions } from "interfaces/interfaces";
+import { ClientOptions } from "interfaces/shopify-interfaces";
 
 export const createClient = (options: ClientOptions): RestClient => {
   const { store_domain: domain, api_key } = options;

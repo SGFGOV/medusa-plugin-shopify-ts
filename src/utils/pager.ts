@@ -3,7 +3,7 @@ import { sleep } from "@medusajs/medusa/dist/utils/sleep";
 import {
   ShopifyImportCallBack,
   ShopifyImportRequest,
-} from "interfaces/interfaces";
+} from "interfaces/shopify-interfaces";
 import { RestClient } from "@shopify/shopify-api/dist/clients/rest";
 import ShopifyService from "services/shopify";
 
@@ -66,7 +66,7 @@ export async function pager<ShopifyData>(
         path
       );
     }
-    logger?.debug(`${JSON.stringify(objects)}`);
+  //  logger?.debug(`${JSON.stringify(objects)}`);
     if (
       shopifyImportRequest.max_num_products &&
       objects?.length >= shopifyImportRequest.max_num_products

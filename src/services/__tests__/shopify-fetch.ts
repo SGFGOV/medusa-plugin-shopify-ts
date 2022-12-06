@@ -1,10 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { ShopifyFetchRequest } from "interfaces/interfaces";
+import {
+  ShopifyFetchRequest,
+  ShopifyPath,
+} from "interfaces/shopify-interfaces";
 import {
   getOptionsConfig,
   getServiceUnderTest,
-} from "../__test-helpers__/configure-container";
+} from "../__helpers__/test-helpers";
 import Redis from "ioredis-mock";
 import ShopifyService from "services/shopify";
 
@@ -18,7 +21,7 @@ describe("ShopifyService", () => {
     });
 
     const testImportsFromShopify = async (
-      category: string,
+      category: ShopifyPath,
       max_num: number
     ): Promise<any> => {
       //  testContainer.registrations.container.resolve(testContainer);
@@ -30,6 +33,7 @@ describe("ShopifyService", () => {
 
       const shopifyFetchRequest: ShopifyFetchRequest = {
         ...clientOptions,
+        requestId: "testFetchRequest",
       };
 
       return await shopifyService.fetchFromShopifyAndProcessSingleCategory(
@@ -43,11 +47,11 @@ describe("ShopifyService", () => {
       expect(data.length).toBeLessThanOrEqual(max_num_products);
     };
 
-    const testFetch = (path: string, num_records = 10): void => {
+    const testFetch = (path: ShopifyPath, num_records = 10): void => {
       it(`succesfully fetches ${path.replace("_", " ")} Shopify`, async () => {
         const data = await testImportsFromShopify(path, num_records);
         verify(data, num_records);
-      }, 300000);
+      }, 10000);
     };
 
     testFetch("collects");

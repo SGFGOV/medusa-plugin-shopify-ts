@@ -7,7 +7,7 @@ import {
 } from "@medusajs/medusa";
 import { ProductRepository } from "@medusajs/medusa/dist/repositories/product";
 import { Logger } from "@medusajs/medusa/dist/types/global";
-import { ClientOptions } from "interfaces/interfaces";
+import { ClientOptions } from "interfaces/shopify-interfaces";
 import { BaseService } from "medusa-interfaces";
 import { EntityManager, ObjectType } from "typeorm";
 import { removeIndex } from "../utils/remove-index";
@@ -19,7 +19,7 @@ export interface ShopifyCollectionServiceParams {
   productCollectionService: ProductCollectionService;
   productService: ProductService;
   storeService: StoreService;
-  productRepository: ProductRepository;
+  productRepository: typeof ProductRepository;
   logger: Logger;
 }
 
@@ -31,7 +31,7 @@ class ShopifyCollectionService extends TransactionBaseService {
   collectionService_: ProductCollectionService;
   storeService_: StoreService;
   medusaProductService_: ProductService;
-  productRepository_: ProductRepository;
+  productRepository_: typeof ProductRepository;
   logger: any;
   constructor(container: ShopifyCollectionServiceParams, options) {
     super(container);
@@ -130,7 +130,7 @@ class ShopifyCollectionService extends TransactionBaseService {
         }
 
         const productRepo = this.manager_.getCustomRepository(
-          this.productRepository_ as unknown as ObjectType<ProductRepository>
+          this.productRepository_
         );
 
         const ids = products.map((p) => p.id);
@@ -139,13 +139,8 @@ class ShopifyCollectionService extends TransactionBaseService {
           ids
         );
 
-        const defaultCurrency = await this.storeService_
-          .retrieve()
-          .then((store) => {
-            return store.default_currency_code;
-          })
-          .catch((_) => undefined);
-
+        const store = await this.storeService_.retrieve();
+        const defaultCurrency = store.default_currency;
         const normalizedCollections = collections.map((c) =>
           this.normalizeSmartCollection_(c)
         );

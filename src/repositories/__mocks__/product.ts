@@ -1,4 +1,6 @@
 import { IdMap } from "medusa-test-utils"
+import fifty_products from "../../services/__fixtures__/test-data_products.fixture"
+
 
 export const ProductModelMock = {
   create: jest.fn().mockReturnValue(Promise.resolve()),
@@ -9,6 +11,12 @@ export const ProductModelMock = {
     return Promise.resolve()
   }),
   deleteOne: jest.fn().mockReturnValue(Promise.resolve()),
+  findWithRelations: jest.fn().mockImplementation((data,ids)=>{
+    const configuredProducts =fifty_products.map((data:any)=>{return{
+      ...data,id:"prod_"+data.id,tags:data.tags.split(','),type:data.product_type}
+    });
+    return Promise.resolve(configuredProducts)
+  }),
   findOne: jest.fn().mockImplementation(query => {
     if (query._id === IdMap.getId("fakeId")) {
       return Promise.resolve({

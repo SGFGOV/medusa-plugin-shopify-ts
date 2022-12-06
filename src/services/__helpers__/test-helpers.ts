@@ -1,8 +1,12 @@
 /* eslint-disable prettier/prettier */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {
+  BatchJob,
   BatchJobService,
+  BatchJobStatus,
   EventBusService,
+  IdempotencyKey,
+  IdempotencyKeyService,
   ProductCollectionService,
   ProductService,
   ProductVariantService,
@@ -31,7 +35,7 @@ import ShopifyProductService from "../shopify-product";
 import { StoreModelMock } from "../../repositories/__mocks__/store";
 import { StoreRepository } from "@medusajs/medusa/dist/repositories/store";
 import ShopifyCollectionService from "../shopify-collection";
-import { NewClientOptions } from "interfaces/interfaces";
+import { NewClientOptions } from "interfaces/shopify-interfaces";
 import { RestClient } from "@shopify/shopify-api/dist/clients/rest";
 import { RestClientMock } from "../__mocks__/rest-client";
 import { StagedJobRepository } from "@medusajs/medusa/dist/repositories/staged-job";
@@ -59,6 +63,7 @@ import { ProductTagRepository } from "@medusajs/medusa/dist/repositories/product
 import { ProductTagModelMock } from "../../repositories/__mocks__/product-tag";
 import { ImageRepository } from "@medusajs/medusa/dist/repositories/image";
 import { ImageModelMock } from "../../repositories/__mocks__/image";
+import { sleep } from "@medusajs/medusa/dist/utils/sleep";
 
 /** mocked values */
 export const mockedLogger: jest.Mocked<Logger> = LoggerMock as any;
@@ -114,7 +119,7 @@ export const realData = (
 
 export const mockData = (
   max_num: number
-): NewClientOptions & { max_num_products: number } => {
+): NewClientOptions & { max_num_products: number,  requestId: string} => {
   return {
     store_domain: "test",
     api_key: "abced",
@@ -122,6 +127,7 @@ export const mockData = (
     max_num_products: max_num,
     defaultClient:mockedRestClient,
     medusa_store_admin_email: "vandijk@test.dk",
+    requestId:"test-id",
        
   };
 };
@@ -172,7 +178,7 @@ const mocks = {
   redisClient:asFunction(()=>mockedRedis).singleton(),
   redisSubscriber:asFunction(()=>mockedRedis).singleton(),
   manager: asFunction(()=>MockManager).singleton(),
- // productService: asFunction(()=>mockedProductService).singleton(),
+  productService: asFunction(()=>mockedProductService).singleton(),
   productVariantService: asFunction(()=>mockedProductVariantService).singleton(),
   shopifyRedisService: asFunction(()=>mockedShopifyRedisService).singleton(),
   configModule: asFunction(()=>mockedConfigFile).singleton(),
@@ -255,7 +261,7 @@ export function configurContainer(): AwilixContainer {
   StrategyResolverService,
   EventBusService,
   BatchJobService,
-  ProductService,
+  // ProductService,
 ];
 
 
@@ -406,4 +412,45 @@ testContainer:AwilixContainer}{
 export function getOptionsConfig(max_num): any{
 
   return process.env.USE_REAL=="true"?realData(max_num):mockData(max_num);
+}
+
+export async function  singleStepBatchJob (
+  job: BatchJob,
+  container: AwilixContainer,
+  done?: any
+): Promise<BatchJob>  {
+  const eventBusService = container.resolve(
+    "eventBusService"
+  ) as EventBusService;
+  const batchJobService = container.resolve(
+    "batchJobService"
+  ) as BatchJobService;
+  await eventBusService.worker_({
+    data: {
+      eventName: "batch.confirmed",
+      data: job as unknown,
+    },
+  });
+
+  //
+  const waitForBatchStatusChange = async (
+    desiredStatus: BatchJobStatus
+  ): Promise<BatchJob> => {
+    setTimeout(() => {
+      if(done) {done(job);}
+    }, 5000);
+
+    job = await batchJobService.retrieve(job.id);
+    let status = job.status;
+    while (status != desiredStatus) {
+      await sleep(5000);
+      job = (await batchJobService.retrieve(job.id));
+      status = job.status;
+    }
+    return job;
+  };
+
+  //  await waitForBatchStatusChange(BatchJobStatus.PROCESSING);
+  const jobResult = await waitForBatchStatusChange(BatchJobStatus.COMPLETED);
+  return jobResult;
 }

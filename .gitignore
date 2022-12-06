@@ -8,6 +8,7 @@ node_modules
 *.tgz
 *.d.ts
 *.map.js
+*.js.map
 dist
 coverage
 
@@ -18,8 +19,10 @@ subscribers/
 migrations/
 loaders/
 interfaces/
+strategies/
 index.*
 strategies/
+repositories/
 
 
 !src/**

@@ -14,6 +14,8 @@ import { ProductRepository } from "@medusajs/medusa/dist/repositories/product";
 import ShopifyProductService from "../shopify-product";
 import LoggerMock from "../__mocks__/logger";
 import { StoreServiceMock } from "../__mocks__/store-service";
+import { ProductOptionRepositoryMock } from "repositories/__mocks__/product-option";
+import { ProductModelMock } from "../../repositories/__mocks__/product";
 
 const mockedLogger: jest.Mocked<Logger> = LoggerMock as any;
 
@@ -25,7 +27,8 @@ const mockedProductCollectionService: jest.Mocked<ProductCollectionService> =
 const mockedShopifyProductService: jest.Mocked<ShopifyProductService> =
   ShopifyProductServiceMock as any;
 const mockedStoreService: jest.Mocked<StoreService> = StoreServiceMock as any;
-let mockedProductRepository: jest.Mocked<ProductRepository>;
+const mockedProductRepository: jest.Mocked<typeof ProductRepository> =
+  ProductModelMock as any;
 
 describe("ShopifyCollectionService", () => {
   describe("create", () => {

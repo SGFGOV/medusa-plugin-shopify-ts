@@ -24,11 +24,13 @@ export type ClientOptions =
     };
 
 export interface ShopifyFetchRequest {
+  requestId: string;
   api_key: string;
   store_domain: string;
   default_store_name: string;
 }
 export interface ShopifyImportRequest extends ShopifyFetchRequest {
+  requestId: string;
   medusa_store_admin_email?: string;
   max_num_products?: number;
   shopify_product_ids?: string[];
@@ -64,3 +66,14 @@ export type ShopifyImportCallBack = (
   userId: string,
   path: string
 ) => Promise<BatchJob>;
+
+export type ShopifyPath =
+  | "products"
+  | "smart_collections"
+  | "custom_collections"
+  | "collects";
+export type ShopifyJobResultType = {
+  advancement_count: number;
+  shopifyData: ShopifyData[];
+  path: string;
+};
