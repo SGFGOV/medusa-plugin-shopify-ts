@@ -644,7 +644,7 @@ class ShopifyProductService extends TransactionBaseService {
     return presentmentPrices.map((p) => {
       return {
         amount: parsePrice(p.price.amount),
-        currency_code: p.price.currency_code.toLowerCase(),
+        currency_code: p.price.currency_code?.toLowerCase() ?? "inr",
       };
     });
   }
