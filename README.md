@@ -31,7 +31,7 @@ In medusa-config.js
 Once your plugin is done. 
 
 ```bash
-npm run build && npm version && npm publish
+
 ```
 
 You can now install it into your project file `medusa-config`.
