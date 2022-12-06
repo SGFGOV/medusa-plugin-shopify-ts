@@ -9,3 +9,5 @@ coverage
 
 tsconfig.tsbuildinfo
 *.tgz
+ services/__*/**/*
+ **/*/*.js.map

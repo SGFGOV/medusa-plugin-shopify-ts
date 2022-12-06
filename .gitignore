@@ -23,10 +23,11 @@ strategies/
 index.*
 strategies/
 repositories/
-
+utils/
 
 !src/**
 
 ./tsconfig.tsbuildinfo
 ./package-lock.json
 ./yarn.json
+**/*/*.js.map
