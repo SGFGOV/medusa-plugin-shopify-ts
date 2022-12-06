@@ -437,7 +437,10 @@ class ShopifyProductService extends TransactionBaseService {
     );
   }
 
-  async updateVariants_(product, updateVariants): Promise<any> {
+  async updateVariants_(
+    product: NormalisedProduct & { id: string },
+    updateVariants
+  ): Promise<any> {
     return this.atomicPhase_(
       async (manager) => {
         const { id, variants, options } = product;
@@ -456,7 +459,7 @@ class ShopifyProductService extends TransactionBaseService {
           }
 
           variant = this.addVariantOptions_(variant, options);
-          const match = variants.find(
+          const match = variants?.find(
             (v) => v.metadata.sh_id === variant.metadata.sh_id
           );
           if (match) {
@@ -490,7 +493,7 @@ class ShopifyProductService extends TransactionBaseService {
             continue;
           }
 
-          const match = updateVariants.find(
+          const match = updateVariants?.find(
             (v) => v.metadata.sh_id === variant.metadata.sh_id
           );
           if (!match) {
@@ -734,11 +737,11 @@ class ShopifyProductService extends TransactionBaseService {
   }
 
   async handleError(e): Promise<void> {
-    this.logger.error("Shopify Plugin Error " + e.message);
+    this?.logger.error("Shopify Plugin Error " + e.message);
   }
 
   async handleWarn(e): Promise<void> {
-    this.handleWarn("Shopify Plugin Error " + e.message);
+    this?.logger.warn("Shopify Plugin Error " + e.message);
   }
 }
 

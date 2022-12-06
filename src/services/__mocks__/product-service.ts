@@ -25,7 +25,7 @@ export const ProductServiceMock = {
     if (id === "shopify_deleted") {
       return Promise.resolve(medusaProducts.ipod);
     }
-    return Promise.resolve(dataStore.get("prod_"+id));
+    return Promise.resolve(dataStore.get("prod_" + id));
   }),
   retrieve: jest.fn().mockImplementation((_id, _config) => {
     if (_id === "prod_ipod") {
@@ -35,6 +35,9 @@ export const ProductServiceMock = {
     }
   }),
   addOption: jest.fn().mockImplementation((_id, _title) => {
+    return Promise.resolve();
+  }),
+  updateOption: jest.fn().mockImplementation((_id, _title) => {
     return Promise.resolve();
   }),
 };

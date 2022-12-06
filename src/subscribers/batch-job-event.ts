@@ -23,7 +23,6 @@ class BatchJobEventSubscriber {
   logger: Logger;
 
   constructor(readonly container: ContainerProps) {
-   // super(container);
     const batchEvents = BatchJobService.Events;
     this.eventbusService_ = container.eventBusService;
     this.batchJobService = container.batchJobService;

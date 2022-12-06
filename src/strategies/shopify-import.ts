@@ -20,6 +20,7 @@ import ShopifyCollectionService from "../services/shopify-collection";
 import ShopifyProductService from "../services/shopify-product";
 import { EntityManager } from "typeorm";
 import { sleep } from "@medusajs/medusa/dist/utils/sleep";
+import { UpdateStoreInput } from "@medusajs/medusa/dist/types/store";
 
 export interface ShopifyImportStrategyProps {
   batchJobService: BatchJobService;
@@ -41,8 +42,6 @@ class ShopifyImportStrategy extends AbstractBatchJobStrategy {
   protected shopifyService_: ShopifyService;
   static identifier = "shopify-import-strategy";
   static batchType = "shopify-import";
-  shopifyProductService_: ShopifyProductService;
-  shopifyCollectionService_: ShopifyCollectionService;
   productService_: ProductService;
   storeService: StoreService;
   logger: Logger;
@@ -53,8 +52,6 @@ class ShopifyImportStrategy extends AbstractBatchJobStrategy {
     this.batchJobService_ = container.batchJobService;
     this.shopifyService_ = container.shopifyService;
     this.storeService = container.storeService;
-    this.shopifyProductService_ = container.shopifyProductService;
-    this.shopifyCollectionService_ = container.shopifyCollectionService;
     this.logger = container.logger;
   }
 
@@ -131,13 +128,13 @@ class ShopifyImportStrategy extends AbstractBatchJobStrategy {
     switch (collectionType) {
       case "custom_collections":
         return await this.atomicPhase_(async (transactionManager) => {
-          return await this.shopifyCollectionService_
+          return await this.shopifyService_.shopifyCollectionService_
             .withTransaction(transactionManager)
             .createCustomCollections(this.collects, theCollection, products);
         });
       case "smart_collections":
         return await this.atomicPhase_(async (transactionManager) => {
-          return await await this.shopifyCollectionService_
+          return await await this.shopifyService_.shopifyCollectionService_
             .withTransaction(transactionManager)
             .createSmartCollections(theCollection, products);
         });
@@ -150,8 +147,7 @@ class ShopifyImportStrategy extends AbstractBatchJobStrategy {
   ): Promise<any> {
     let pathObjects = [];
 
-    let recievedPathEntries = 
-    [];
+    let recievedPathEntries = [];
     while (recievedPathEntries.length == 0) {
       const batchPaths = await this.shopifyService_.getBatchTasks(
         shopifyImportRequest.requestId
@@ -224,13 +220,21 @@ class ShopifyImportStrategy extends AbstractBatchJobStrategy {
         let store_id: string;
         const default_store_name = shopifyImportRequest.default_store_name;
         if (this.shopifyService_.options.enable_vendor_store) {
-          store_id = (await this.shopifyService_.getStoreByName(product.vendor))
-            .id;
+          try {
+            const vendorStore = await this.shopifyService_.getStoreByName(
+              product.vendor
+            );
+            store_id = vendorStore.id;
+          } catch (e) {
+            this.logger.warn(`${product.vendor} store doesn't exist`);
+          }
+
           if (!store_id && this.shopifyService_.options.auto_create_store) {
             let store = await this.storeService.create();
             store = await this.storeService.update({
               name: product.vendor,
-            });
+              id: store.id,
+            } as any);
             store_id = store.id;
           } else {
             throw new Error(
@@ -242,7 +246,7 @@ class ShopifyImportStrategy extends AbstractBatchJobStrategy {
             await this.shopifyService_.getStoreByName(default_store_name)
           ).id;
         }
-        const result = await this.shopifyProductService_
+        const result = await this.shopifyService_.shopifyProductService_
           .withTransaction(transactionManager)
           .create(product, store_id);
         if (result) {

@@ -66,7 +66,6 @@ export async function pager<ShopifyData>(
         path
       );
     }
-  //  logger?.debug(`${JSON.stringify(objects)}`);
     if (
       shopifyImportRequest.max_num_products &&
       objects?.length >= shopifyImportRequest.max_num_products

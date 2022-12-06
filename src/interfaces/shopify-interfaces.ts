@@ -19,7 +19,7 @@ export type ClientOptions =
       store_domain?: string;
       api_key?: string;
       default_store_name?: string;
-      enable_vendor_store?: string;
+      enable_vendor_store?: boolean;
       auto_create_store?: string;
     };
 

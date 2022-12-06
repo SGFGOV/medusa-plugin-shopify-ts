@@ -35,7 +35,7 @@ import ShopifyProductService from "../shopify-product";
 import { StoreModelMock } from "../../repositories/__mocks__/store";
 import { StoreRepository } from "@medusajs/medusa/dist/repositories/store";
 import ShopifyCollectionService from "../shopify-collection";
-import { NewClientOptions } from "interfaces/shopify-interfaces";
+import { ClientOptions, NewClientOptions } from "interfaces/shopify-interfaces";
 import { RestClient } from "@shopify/shopify-api/dist/clients/rest";
 import { RestClientMock } from "../__mocks__/rest-client";
 import { StagedJobRepository } from "@medusajs/medusa/dist/repositories/staged-job";
@@ -347,7 +347,8 @@ const resolveAll = (container:AwilixContainer): any=>
     return result;
   };
   
-export function getServiceUnderTest(args:any):{services:Record<string,unknown>,
+export function getServiceUnderTest(max_num:any,
+  enable_vendor_store?:boolean,auto_create_store?:boolean):{services:Record<string,unknown>,
 testContainer:AwilixContainer}{
   
   try{
@@ -356,7 +357,8 @@ testContainer:AwilixContainer}{
 
     const cache = resolveAll(testContainer);/* creating all singleton objects */
     const commonServices = resolveAll(testContainer);
-    const options = getOptionsConfig(args);
+    const options = { ...getOptionsConfig(max_num),enable_vendor_store,auto_create_store } as ClientOptions;
+    
   /* initialising dependnet services */
     const shopifyClientService = new ShopifyClientService(
       { ...commonServices
