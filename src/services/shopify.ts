@@ -285,7 +285,9 @@ class ShopifyService extends TransactionBaseService {
         .confirm(job);
     });
     self.logger?.info(`${job.id}  import in progress`);
-    await self.defaultBatchActionNotifier(job);
+    if (self.defaultBatchActionNotifier) {
+      await self.defaultBatchActionNotifier(job);
+    }
     job = await self.atomicPhase_(async (transactionManager) => {
       return await self.batchJobService_
         .withTransaction(transactionManager)
