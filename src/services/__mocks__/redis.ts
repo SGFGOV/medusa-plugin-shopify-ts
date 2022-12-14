@@ -74,6 +74,7 @@ eventEmitter.setMaxListeners(Infinity);
 client["on"] = eventEmitter.on as any;
 client["once"] = eventEmitter.once as any;
 const mockClient = _.cloneDeep(client);
+mockClient["options"] = {};
 mockClient["client"] = (): any => {
   return "OK" as any;
 };

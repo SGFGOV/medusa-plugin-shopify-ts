@@ -17,12 +17,13 @@ import { ShopifyClientServiceMock } from "../__mocks__/shopify-client";
 import { ShopifyRedisServiceMock } from "../__mocks__/shopify-redis";
 import { medusaProducts, shopifyProducts } from "../__mocks__/test-products";
 import LoggerMock from "../__mocks__/logger";
+import { MultiStoreProductService } from "services/modified-core-services/multistore-product";
 
 const mockedLogger: jest.Mocked<Logger> = LoggerMock as any;
 
 const mockedShopifyClientService: jest.Mocked<ShopifyClientService> =
   ShopifyClientServiceMock as any;
-const mockedProductService: jest.Mocked<ProductService> =
+const mockedProductService: jest.Mocked<MultiStoreProductService> =
   ProductServiceMock as any;
 const mockedProductVariantService: jest.Mocked<ProductVariantService> =
   ProductVariantServiceMock as any;

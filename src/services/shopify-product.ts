@@ -1,7 +1,5 @@
 /* eslint-disable valid-jsdoc */
 import {
-  Product,
-  ProductService,
   ProductStatus,
   ProductVariantService,
   ShippingProfileService,
@@ -21,12 +19,13 @@ import random from "lodash/random";
 import { MedusaError } from "medusa-core-utils";
 import { EntityManager } from "typeorm";
 import { parsePrice } from "../utils/parse-price";
+import { MultiStoreProductService } from "./modified-core-services/multistore-product";
 import ShopifyClientService from "./shopify-client";
 import ShopifyRedisService from "./shopify-redis";
 
 export interface ShopifyProductServiceParams {
   manager: EntityManager;
-  productService: ProductService;
+  productService: MultiStoreProductService;
   productVariantService: ProductVariantService;
   shippingProfileService: ShippingProfileService;
   shopifyClientService: ShopifyClientService;
@@ -97,7 +96,7 @@ class ShopifyProductService extends TransactionBaseService {
   protected manager_: EntityManager;
   protected transactionManager_: EntityManager;
   options: ClientOptions;
-  productService_: ProductService;
+  productService_: MultiStoreProductService;
   productVariantService_: ProductVariantService;
   shippingProfileService_: ShippingProfileService;
   shopify_: ShopifyClientService;
@@ -154,7 +153,7 @@ class ShopifyProductService extends TransactionBaseService {
    * @return {Product} the created product
    */
   async create(data, store_id?: string): Promise<any> {
-    const result = this.atomicPhase_(
+    const result = await this.atomicPhase_(
       async (manager): Promise<any> => {
         const ignore = await this.redis_.shouldIgnore(
           data.id,
@@ -164,18 +163,33 @@ class ShopifyProductService extends TransactionBaseService {
           return;
         }
         this.logger.info("creating product: " + data.handle);
-        const existingProduct = await this.productService_
-          .withTransaction(manager)
-          .retrieveByExternalId(data.id, {
-            relations: ["variants", "options"],
-          })
-          .catch((_) => undefined);
 
-        if (existingProduct) {
-          this.logger.info("updating product: " + data.handle);
-          return await this.update(existingProduct, data);
+        const metafields = await this.shopify_.get({
+          path: `products/${data.id}/metafields.json`,
+        });
+        data["metafields"] = metafields;
+
+        try {
+          const existingProduct = await this.productService_
+            .withTransaction(manager)
+            .retrieveByExternalId(
+              data.id,
+              {
+                relations: ["variants", "options"],
+              },
+              store_id
+            );
+
+          if (existingProduct) {
+            this.logger.info("updating product: " + data.handle);
+            return await this.withTransaction(manager).update(
+              existingProduct,
+              data
+            );
+          }
+        } catch (e) {
+          this.logger.info("unable to verify if the product exists");
         }
-
         this.logger.info("normalising product: " + data.handle);
         const normalizedProduct = this.normalizeProduct_(data);
         normalizedProduct.profile_id = await this.getShippingProfile_(
@@ -193,11 +207,12 @@ class ShopifyProductService extends TransactionBaseService {
               store_id: store_id,
             }
           : normalizedProduct;
-
-        const product = await this.productService_
-          .withTransaction(manager)
-          .create(productToSave as CreateProductInput);
-
+        const product = await manager.transaction(async (manager) => {
+          const product = await this.productService_
+            .withTransaction(manager)
+            .create(productToSave as CreateProductInput);
+          return product;
+        });
         if (variants) {
           variants = variants.map((v) =>
             this.addVariantOptions_(v, product.options)
@@ -536,9 +551,11 @@ class ShopifyProductService extends TransactionBaseService {
           }
         }
 
-        const result = await this.productService_.retrieve(id, {
-          relations: ["variants", "options"],
-        });
+        const result = await this.productService_
+          .withTransaction(manager)
+          .retrieve(id, {
+            relations: ["variants", "options"],
+          });
 
         return result;
       },
@@ -548,15 +565,18 @@ class ShopifyProductService extends TransactionBaseService {
   }
 
   async getShippingProfile_(isGiftCard): Promise<any> {
-    let shippingProfile;
-    if (isGiftCard) {
-      shippingProfile =
-        await this.shippingProfileService_.retrieveGiftCardDefault();
-    } else {
-      shippingProfile = await this.shippingProfileService_.retrieveDefault();
-    }
+    return await this.atomicPhase_(async (manager) => {
+      let shippingProfile;
+      if (isGiftCard) {
+        shippingProfile = this.shippingProfileService_
+          .withTransaction(manager)
+          .retrieveGiftCardDefault();
+      } else {
+        shippingProfile = await this.shippingProfileService_.retrieveDefault();
+      }
 
-    return shippingProfile;
+      return shippingProfile;
+    });
   }
 
   /**

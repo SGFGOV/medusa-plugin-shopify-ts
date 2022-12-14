@@ -1,13 +1,13 @@
-export function buildQuery(query) {
-  let path = ""
+export function buildQuery(query): string {
+  let path = "";
 
   if (query) {
     const queryString = Object.entries(query).map(([key, value]) => {
-      return `${key}=${value}`
-    })
+      return `${key}=${value}`;
+    });
 
-    path = `?${queryString.join("&")}`
+    path = `?${queryString.join("&")}`;
   }
 
-  return path
+  return path;
 }

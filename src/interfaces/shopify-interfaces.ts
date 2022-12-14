@@ -71,7 +71,8 @@ export type ShopifyPath =
   | "products"
   | "smart_collections"
   | "custom_collections"
-  | "collects";
+  | "collects"
+  | "metafields";
 export type ShopifyJobResultType = {
   advancement_count: number;
   shopifyData: ShopifyData[];

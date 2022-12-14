@@ -4,9 +4,15 @@ import {
   EventBusService,
   StrategyResolverService,
 } from "@medusajs/medusa";
-import BatchJobSubscriber from "@medusajs/medusa/dist/subscribers/batch-job";
 import { Logger } from "@medusajs/medusa/dist/types/global";
+import ShopifyImportStrategy from "../strategies/shopify-import";
 import { EntityManager } from "typeorm";
+
+export const ShopifyEvents = {
+  "Shopify.batch.created": "SHOPIFY_BATCH_CREATED",
+  "Shopify.batch.confirmed": "SHOPIFY_BATCH_CONFIRMED",
+  "Shopify.batch.failed": "SHOPIFY_BATCH_FAILED",
+};
 
 export interface ContainerProps {
   logger: Logger;
@@ -28,20 +34,30 @@ class BatchJobEventSubscriber {
     this.batchJobService = container.batchJobService;
     this.logger = container.logger;
     this.manager = container.manager;
+    const eventsOfInterest = [...Object.values(batchEvents)];
 
     for (const key of Object.keys(batchEvents)) {
       const event = batchEvents[key];
-      this.eventbusService_.subscribe(event, async (data: { id: string }) => {
-        return await Promise.resolve(
-          this.batchAction(data, event.split(".")[1])
-        );
-      });
+      if (eventsOfInterest.indexOf(event) >= 0) {
+        this.eventbusService_.subscribe(event, async (data: { id: string }) => {
+          await this.batchAction(data, event.split(".")[1]);
+          return;
+        });
+      }
     }
   }
 
-  logDefaultMessage(batchJob: BatchJob, eventType: string): void {
+  async logDefaultMessage(
+    batchJob: BatchJob,
+    eventType: string
+  ): Promise<void> {
+    const jobsInQueue = await this.batchJobService.listAndCount({
+      type: [ShopifyImportStrategy.batchType],
+    });
+
     this.logger.info(
-      `${batchJob.type} ${batchJob.id} requested by ${batchJob.created_by_user} ${eventType}`
+      `Processing 1 of ${jobsInQueue[0].length} shopify batch jobs,` +
+        `${batchJob.type} ${batchJob.id} requested by ${batchJob.created_by} ${eventType}`
     );
   }
   async batchAction(data: { id: string }, eventType: string): Promise<void> {
@@ -64,17 +80,17 @@ class BatchJobEventSubscriber {
           throw new Error(errMsg);
         }
         case "confirmed":
-          this.logDefaultMessage(batchJob, eventType);
+          await this.logDefaultMessage(batchJob, eventType);
           // await this.batchJobService.setProcessing(data.id);
           break;
         case "processing":
-          this.logDefaultMessage(batchJob, eventType);
+          await this.logDefaultMessage(batchJob, eventType);
           break;
 
         default:
-          this.logDefaultMessage(batchJob, eventType);
+          await this.logDefaultMessage(batchJob, eventType);
       }
-      return await Promise.resolve();
+      return;
     } catch (e) {
       const errMsg = `batch ${data.id} requested by not found`;
       this.logger.error(errMsg);

@@ -45,7 +45,9 @@ export async function pager<ShopifyData>(
     /** limiting throttling */
     await sleep(600);
 
-    objects = [...objects, ...response.body[path]];
+    const currentPageResponse = response.body[path];
+
+    objects = [...objects, ...currentPageResponse];
 
     const link = response.headers.get("link");
     const match =
@@ -60,7 +62,7 @@ export async function pager<ShopifyData>(
     if (gotPageCallBack) {
       await gotPageCallBack(
         shopifyService,
-        objects,
+        currentPageResponse,
         shopifyImportRequest,
         userId,
         path

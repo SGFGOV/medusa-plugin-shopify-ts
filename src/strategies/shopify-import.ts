@@ -58,7 +58,6 @@ class ShopifyImportStrategy extends AbstractBatchJobStrategy {
   async processJob(batchJobId: string): Promise<void> {
     const batch = await this.batchJobService_.retrieve(batchJobId);
     const retrievedShopifyData = batch.context.shopifyData as ShopifyData[];
-
     const shopifyImportRequest = batch.context
       .shopifyImportRequest as ShopifyImportRequest;
 
@@ -191,11 +190,14 @@ class ShopifyImportStrategy extends AbstractBatchJobStrategy {
     return await this.atomicPhase_(async (transactionManager) => {
       const max_products = shopifyImportRequest.shopify_product_ids
         ? Math.min(
-            shopifyImportRequest.shopify_product_ids?.length,
-            shopifyImportRequest.max_num_products,
+            shopifyImportRequest.shopify_product_ids?.length ?? Infinity,
+            shopifyImportRequest.max_num_products ?? Infinity,
             products.length
           )
-        : Math.min(shopifyImportRequest.max_num_products, products.length);
+        : Math.min(
+            shopifyImportRequest.max_num_products ?? Infinity,
+            products.length
+          );
 
       for (
         let productInputListCount = 0, productCreateCount = 0;
@@ -268,23 +270,17 @@ class ShopifyImportStrategy extends AbstractBatchJobStrategy {
         .withTransaction(transactionManager)
         .retrieve(batchJobId);
 
-      const count = await this.shopifyService_.lastFetchedProducts?.length
-        .withTransaction(transactionManager)
-        .count({
-          status: ProductStatus.PROPOSED,
-        });
+      this.logger.info(`Pre processed shopify data  job id: ${batchJob.id}`);
 
       await this.batchJobService_
         .withTransaction(transactionManager)
         .update(batchJob, {
           result: {
-            advancement_count: 0,
-            count,
             stat_descriptors: [
               {
-                key: "shopify-import-count",
-                name: "Number of products to imported",
-                message: `${count} product(s) will be imported.`,
+                key: "shopify-import-status",
+                name: "Batch being currently processed",
+                message: `The batch ${batchJob.id} is under pre processing`,
               },
             ],
           },

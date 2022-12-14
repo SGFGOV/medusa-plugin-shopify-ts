@@ -1,6 +1,6 @@
 {
   "name": "medusa-plugin-shopify-ts",
-  "version": "3.0.4",
+  "version": "3.0.22",
   "description": "A plugin to pull from shopify store",
   "main": "index.js",
   "types": "index.d.ts",
@@ -19,7 +19,7 @@
     "e-commerce"
   ],
   "author": "Govind Diwakar <govind.diwakar@gmail.com>",
-  "license": "MIT",
+  "license": "GPL",
   "scripts": {
     "clean": "./node_modules/.bin/rimraf __test-helpers__/ services/ models/ migrations/ api/ subscribers/ interfaces/ strategies/ utils/ repositories/ loaders/ index.js index.map.js",
     "build": "npm run clean && tsc -p tsconfig.json",

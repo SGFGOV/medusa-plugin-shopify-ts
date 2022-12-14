@@ -28,6 +28,7 @@ import ShopifyClientService from "./shopify-client";
 import ShopifyCollectionService from "./shopify-collection";
 import ShopifyProductService from "./shopify-product";
 import { ShopifyPath } from "../interfaces/shopify-interfaces";
+import { sleep } from "@medusajs/medusa/dist/utils/sleep";
 
 export interface ShopifyServiceParams {
   manager: EntityManager;
@@ -62,21 +63,21 @@ class ShopifyService extends TransactionBaseService {
   storeService_: StoreService;
   logger: Logger;
   buildService_: any;
-  lastFetchedProducts: any;
-  lastFetchedCustomCollections: any;
-  lastFetchedSmartCollections: any;
+  lastFetchedProducts: FetchedShopifyData;
+  lastFetchedCustomCollections: FetchedShopifyData;
+  lastFetchedSmartCollections: FetchedShopifyData;
   batchJobService_: BatchJobService;
 
   userService: UserService;
   configModule: ConfigModule;
   eventBus_: EventBusService;
-  lastFetchedSmartCollection: FetchedShopifyData;
   lastFetchedCollects: FetchedShopifyData;
   defaultBatchActionNotifier: BatchActionCallBack;
   requestBatchTasks: Map<string, ShopifyBatchTask[]> = new Map<
     string,
     ShopifyBatchTask[]
   >();
+  lastFetchedMetafields: FetchedShopifyData;
 
   constructor(container: ShopifyServiceParams, options: ClientOptions) {
     super(container);
@@ -160,7 +161,7 @@ class ShopifyService extends TransactionBaseService {
         userId,
         gotPageCallBack
       );
-    this.lastFetchedSmartCollection =
+    this.lastFetchedSmartCollections =
       await this.fetchFromShopifyAndProcessSingleCategory(
         shopifyRequest,
         "smart_collections",
@@ -171,7 +172,7 @@ class ShopifyService extends TransactionBaseService {
     return {
       products: this.lastFetchedProducts,
       customCollections: this.lastFetchedCustomCollections,
-      smartCollections: this.lastFetchedSmartCollection,
+      smartCollections: this.lastFetchedSmartCollections,
       collects: this.lastFetchedCollects,
       //  client: client_,
     };
@@ -238,6 +239,7 @@ class ShopifyService extends TransactionBaseService {
     userId: string,
     path: ShopifyPath
   ): Promise<BatchJob> {
+    const isTest = process.env.NODE_ENV == "test";
     let job = await self.atomicPhase_(async (transactionManager) => {
       return await self.batchJobService_
         .withTransaction(transactionManager)
@@ -249,7 +251,7 @@ class ShopifyService extends TransactionBaseService {
             path,
           },
           created_by: userId,
-          dry_run: true,
+          dry_run: isTest,
         });
     });
     job.loadStatus();
@@ -274,17 +276,20 @@ class ShopifyService extends TransactionBaseService {
           .retrieve(job.id);
       });
     }
-    job = await self.atomicPhase_(async (transactionManager) => {
-      return await self.batchJobService_
-        .withTransaction(transactionManager)
-        .setPreProcessingDone(job);
-    });
-    job = await self.atomicPhase_(async (transactionManager) => {
-      return await self.batchJobService_
-        .withTransaction(transactionManager)
-        .confirm(job);
-    });
-    self.logger?.info(`${job.id}  import in progress`);
+    if (isTest) {
+      job = await self.atomicPhase_(async (transactionManager) => {
+        return await self.batchJobService_
+          .withTransaction(transactionManager)
+          .setPreProcessingDone(job);
+      });
+
+      job = await self.atomicPhase_(async (transactionManager) => {
+        return await self.batchJobService_
+          .withTransaction(transactionManager)
+          .confirm(job);
+      });
+    }
+    self.logger?.info(`${job.id}  import in progress - ${job.status}`);
     if (self.defaultBatchActionNotifier) {
       await self.defaultBatchActionNotifier(job);
     }
