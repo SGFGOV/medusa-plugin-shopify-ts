@@ -1,6 +1,7 @@
 import {
   BatchJob,
   BatchJobService,
+  BatchJobStatus,
   EventBusService,
   StrategyResolverService,
 } from "@medusajs/medusa";
@@ -51,14 +52,54 @@ class BatchJobEventSubscriber {
     batchJob: BatchJob,
     eventType: string
   ): Promise<void> {
-    const jobsInQueue = await this.batchJobService.listAndCount({
+    const jobs = await this.batchJobService.listAndCount({
       type: [ShopifyImportStrategy.batchType],
+      status: [
+        BatchJobStatus.PROCESSING,
+        BatchJobStatus.PRE_PROCESSED,
+        BatchJobStatus.CREATED,
+        BatchJobStatus.COMPLETED,
+        BatchJobStatus.CONFIRMED,
+        BatchJobStatus.FAILED,
+      ],
+    });
+
+    const jobList = jobs[0];
+    const jobCount = jobs[1];
+
+    const createdJobs = jobList.filter((job) => {
+      return job.status == BatchJobStatus.CREATED;
+    });
+
+    const processingJobs = jobList.filter((job) => {
+      return (
+        job.status == BatchJobStatus.PROCESSING ||
+        job.status == BatchJobStatus.PRE_PROCESSED
+      );
+    });
+
+    const failedJobs = jobList.filter((job) => {
+      return job.status == BatchJobStatus.FAILED;
+    });
+
+    const completedJobs = jobList.filter((job) => {
+      return job.status == BatchJobStatus.COMPLETED;
+    });
+
+    const confirmedJobs = jobList.filter((job) => {
+      return job.status == BatchJobStatus.CONFIRMED;
     });
 
     this.logger.info(
-      `Processing 1 of ${jobsInQueue[0].length} shopify batch jobs,` +
-        `${batchJob.type} ${batchJob.id} requested by ${batchJob.created_by} ${eventType}`
+      `Processing ${batchJob.type} ${batchJob.id} requested by ${batchJob.created_by} ${eventType}`
     );
+
+    this.logger.info(`Shopfy Jobs Summary: Total Jobs: ${jobCount}
+    created: ${createdJobs.length}
+    confirmed: ${confirmedJobs.length}
+    processing: ${processingJobs.length}
+    completed: ${completedJobs.length},
+    failed: ${failedJobs.length} `);
   }
   async batchAction(data: { id: string }, eventType: string): Promise<void> {
     try {
