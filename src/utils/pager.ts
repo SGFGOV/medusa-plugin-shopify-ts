@@ -28,7 +28,7 @@ export async function pager<ShopifyData>(
       path,
       query: { page_info: nextPage },
     };
-    logger?.info(`fetching page ${pageCount++}`);
+    logger?.info(`fetching page ${path} ${pageCount++}`);
     if (extraHeaders) {
       Object.assign(params, { extraHeaders: extraHeaders });
     }

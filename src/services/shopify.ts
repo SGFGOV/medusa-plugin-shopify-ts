@@ -289,7 +289,7 @@ class ShopifyService extends TransactionBaseService {
           .confirm(job);
       });
     }
-    self.logger?.info(`${job.id}  import in progress - ${job.status}`);
+    self.logger?.info(`${job.id}  import in progress - ${path} ${job.status} `);
     if (self.defaultBatchActionNotifier) {
       await self.defaultBatchActionNotifier(job);
     }
