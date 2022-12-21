@@ -57,7 +57,7 @@ class BatchJobEventSubscriber {
         type: [ShopifyImportStrategy.batchType],
       },
       {
-        take: Infinity,
+        take: 1e9,
       }
     );
 
