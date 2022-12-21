@@ -52,17 +52,14 @@ class BatchJobEventSubscriber {
     batchJob: BatchJob,
     eventType: string
   ): Promise<void> {
-    const jobs = await this.batchJobService.listAndCount({
-      type: [ShopifyImportStrategy.batchType],
-      status: [
-        BatchJobStatus.PROCESSING,
-        BatchJobStatus.PRE_PROCESSED,
-        BatchJobStatus.CREATED,
-        BatchJobStatus.COMPLETED,
-        BatchJobStatus.CONFIRMED,
-        BatchJobStatus.FAILED,
-      ],
-    });
+    const jobs = await this.batchJobService.listAndCount(
+      {
+        type: [ShopifyImportStrategy.batchType],
+      },
+      {
+        take: Infinity,
+      }
+    );
 
     const jobList = jobs[0];
     const jobCount = jobs[1];
