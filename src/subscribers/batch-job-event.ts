@@ -41,7 +41,21 @@ class BatchJobEventSubscriber {
       const event = batchEvents[key];
       if (eventsOfInterest.indexOf(event) >= 0) {
         this.eventbusService_.subscribe(event, async (data: { id: string }) => {
-          await this.batchAction(data, event.split(".")[1]);
+          try {
+            await this.batchAction(data, event.split(".")[1]);
+          } catch (e) {
+            this.logger.error(
+              "error determining batch status" + (e as Error).message
+            );
+          }
+          try {
+            await this.logBatchSummary();
+          } catch (e) {
+            this.logger.error(
+              "error generating shopify batch summary " + (e as Error).message
+            );
+          }
+
           return;
         });
       }
@@ -52,6 +66,12 @@ class BatchJobEventSubscriber {
     batchJob: BatchJob,
     eventType: string
   ): Promise<void> {
+    this.logger.info(
+      `Evaluating ${batchJob.type} ${batchJob.id} requested by ${batchJob.created_by} ${eventType}`
+    );
+  }
+
+  async logBatchSummary(): Promise<void> {
     const jobs = await this.batchJobService.listAndCount(
       {
         type: [ShopifyImportStrategy.batchType],
@@ -86,10 +106,6 @@ class BatchJobEventSubscriber {
     const confirmedJobs = jobList.filter((job) => {
       return job.status == BatchJobStatus.CONFIRMED;
     });
-
-    this.logger.info(
-      `Processing ${batchJob.type} ${batchJob.id} requested by ${batchJob.created_by} ${eventType}`
-    );
 
     this.logger.info(`Shopfy Jobs Summary: Total Jobs: ${jobCount}
     created: ${createdJobs.length}
@@ -130,7 +146,9 @@ class BatchJobEventSubscriber {
       }
       return;
     } catch (e) {
-      const errMsg = `batch ${data.id} requested by not found`;
+      const err = e as Error;
+      const errMsg =
+        `batch ${data.id} requested by not found` + ` ${JSON.stringify(err)}`;
       this.logger.error(errMsg);
     }
   }

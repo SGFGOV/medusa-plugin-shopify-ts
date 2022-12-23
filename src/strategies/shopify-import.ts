@@ -57,6 +57,9 @@ class ShopifyImportStrategy extends AbstractBatchJobStrategy {
 
   async processJob(batchJobId: string): Promise<void> {
     const batch = await this.batchJobService_.retrieve(batchJobId);
+    if (batch.status == BatchJobStatus.COMPLETED) {
+      return;
+    }
     const retrievedShopifyData = batch.context.shopifyData as ShopifyData[];
     const shopifyImportRequest = batch.context
       .shopifyImportRequest as ShopifyImportRequest;
