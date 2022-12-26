@@ -1,5 +1,6 @@
 /* eslint-disable valid-jsdoc */
 import {
+  EventBusService,
   ProductStatus,
   ProductVariantService,
   ShippingProfileService,
@@ -30,6 +31,7 @@ export interface ShopifyProductServiceParams {
   shippingProfileService: ShippingProfileService;
   shopifyClientService: ShopifyClientService;
   shopifyRedisService: ShopifyRedisService;
+  eventBusService: EventBusService;
   logger: Logger;
 }
 
@@ -102,6 +104,7 @@ class ShopifyProductService extends TransactionBaseService {
   shopify_: ShopifyClientService;
   redis_: ShopifyRedisService;
   logger: Logger;
+  eventBusService: EventBusService;
   constructor(container: ShopifyProductServiceParams, options) {
     super(container);
 
@@ -120,6 +123,7 @@ class ShopifyProductService extends TransactionBaseService {
 
     this.redis_ = container.shopifyRedisService;
     this.logger = container.logger;
+    this.eventBusService = container.eventBusService;
   }
 
   withTransaction(transactionManager): this {
@@ -135,6 +139,7 @@ class ShopifyProductService extends TransactionBaseService {
         productService: this.productService_,
         shopifyClientService: this.shopify_,
         shopifyRedisService: this.redis_,
+        eventBusService: this.eventBusService,
         logger: this.logger,
       },
       this.options
@@ -227,6 +232,15 @@ class ShopifyProductService extends TransactionBaseService {
         }
 
         await this.redis_.addIgnore(data.id, "product.created");
+
+        if (metafields) {
+          await this.eventBusService
+            .withTransaction(manager)
+            .emit("shopify.data.metafields.found", {
+              product_id: product.id,
+              metafields,
+            });
+        }
 
         return product;
       },

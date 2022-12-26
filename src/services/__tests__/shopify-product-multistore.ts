@@ -1,4 +1,5 @@
 import {
+  EventBusService,
   Product,
   ProductCollectionService,
   ProductService,
@@ -22,6 +23,7 @@ import { medusaProducts, shopifyProducts } from "../__mocks__/test-products";
 import LoggerMock from "../__mocks__/logger";
 import { ProductServiceMultiStoreMock } from "../__mocks__/product-service-multistore";
 import { MultiStoreProductService } from "services/modified-core-services/multistore-product";
+import { EventBusServiceMock } from "services/__mocks__";
 
 const mockedLogger: jest.Mocked<Logger> = LoggerMock as any;
 
@@ -35,6 +37,8 @@ const mockedShippingProfileService: jest.Mocked<ShippingProfileService> =
   ShippingProfileServiceMock as any;
 const mockedShopifyRedisService: jest.Mocked<ShopifyRedisService> =
   ShopifyRedisServiceMock as any;
+const mockedEventBusService: jest.Mocked<EventBusService> =
+  EventBusServiceMock as any;
 
 describe("ShopifyProductService", () => {
   describe("normalizeProduct_", () => {
@@ -47,6 +51,7 @@ describe("ShopifyProductService", () => {
         shippingProfileService: mockedShippingProfileService,
         shopifyRedisService: mockedShopifyRedisService,
         logger: mockedLogger,
+        eventBusService: mockedEventBusService,
       },
       {}
     );
@@ -78,6 +83,7 @@ describe("ShopifyProductService", () => {
         shippingProfileService: mockedShippingProfileService,
         shopifyRedisService: mockedShopifyRedisService,
         logger: mockedLogger,
+        eventBusService: mockedEventBusService,
       },
       {}
     );
@@ -117,7 +123,9 @@ describe("ShopifyProductService", () => {
         shippingProfileService: mockedShippingProfileService,
         shopifyRedisService: mockedShopifyRedisService,
         logger: mockedLogger,
+        eventBusService: mockedEventBusService,
       },
+
       {}
     );
 
