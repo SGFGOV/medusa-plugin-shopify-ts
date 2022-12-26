@@ -19,7 +19,7 @@ import { ShopifyRedisServiceMock } from "../__mocks__/shopify-redis";
 import { medusaProducts, shopifyProducts } from "../__mocks__/test-products";
 import LoggerMock from "../__mocks__/logger";
 import { MultiStoreProductService } from "services/modified-core-services/multistore-product";
-import { EventBusServiceMock } from "services/__mocks__";
+import { EventBusServiceMock } from "../__mocks__";
 
 const mockedLogger: jest.Mocked<Logger> = LoggerMock as any;
 
