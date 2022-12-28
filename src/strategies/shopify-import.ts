@@ -151,13 +151,21 @@ class ShopifyImportStrategy extends AbstractBatchJobStrategy {
 
     let recievedPathEntries = [];
     while (recievedPathEntries.length == 0) {
+      /** current request */
       const batchPaths = await this.shopifyService_.getBatchTasks(
         shopifyImportRequest.requestId
       );
-      recievedPathEntries = batchPaths.filter((batchPath) => {
+      recievedPathEntries = batchPaths?.filter((batchPath) => {
         return batchPath.path == path;
       });
+      if (!recievedPathEntries) {
+        /** some batches may havebeen completed in an earlier request */
+        return await this.fetchCompletedJobResults(path);
+      }
       if (recievedPathEntries.length > 0) {
+        break;
+      }
+      if (recievedPathEntries.length == 0) {
         break;
       }
       await sleep(3000);
@@ -183,6 +191,25 @@ class ShopifyImportStrategy extends AbstractBatchJobStrategy {
       });
 
       return pathObjects;
+    });
+  }
+  async fetchCompletedJobResults(path: string): Promise<any> {
+    const completedBatches = await this.batchJobService_.listAndCount(
+      {
+        status: [BatchJobStatus.COMPLETED],
+      },
+      {
+        relations: ["id", "result", "context"],
+      }
+    );
+    const retrievedBatchJobList = completedBatches[0];
+    const completedJobsResultOfInterest = retrievedBatchJobList.filter(
+      (job) => job.context.path == path
+    );
+
+    return completedJobsResultOfInterest.map((job) => {
+      const result: ShopifyJobResultType = job.result as ShopifyJobResultType;
+      return result;
     });
   }
 
