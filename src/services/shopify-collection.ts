@@ -2,10 +2,12 @@
 import {
   ProductCollectionService,
   ProductService,
+  Store,
   StoreService,
   TransactionBaseService,
 } from "@medusajs/medusa";
 import { ProductRepository } from "@medusajs/medusa/dist/repositories/product";
+import { StoreRepository } from "@medusajs/medusa/dist/repositories/store";
 import { Logger } from "@medusajs/medusa/dist/types/global";
 import { ClientOptions } from "interfaces/shopify-interfaces";
 import { BaseService } from "medusa-interfaces";
@@ -19,6 +21,7 @@ export interface ShopifyCollectionServiceParams {
   productCollectionService: ProductCollectionService;
   productService: ProductService;
   storeService: StoreService;
+  storeRepository: typeof StoreRepository;
   productRepository: typeof ProductRepository;
   logger: Logger;
 }
@@ -33,6 +36,7 @@ class ShopifyCollectionService extends TransactionBaseService {
   medusaProductService_: ProductService;
   productRepository_: typeof ProductRepository;
   logger: any;
+  storeRepository_: typeof StoreRepository;
   constructor(container: ShopifyCollectionServiceParams, options) {
     super(container);
 
@@ -51,6 +55,7 @@ class ShopifyCollectionService extends TransactionBaseService {
 
     /** @private @const {Product} */
     this.productRepository_ = container.productRepository;
+    this.storeRepository_ = container.storeRepository;
     this.logger = container.logger ?? console;
   }
 
@@ -67,6 +72,7 @@ class ShopifyCollectionService extends TransactionBaseService {
         storeService: this.storeService_,
         productService: this.medusaProductService_,
         productRepository: this.productRepository_,
+        storeRepository: this.storeRepository_,
         logger: this.logger,
       },
       this.options
@@ -84,14 +90,20 @@ class ShopifyCollectionService extends TransactionBaseService {
    * @param {Object[]} products
    * @return {Promise}
    */
-  async createCustomCollections(collects, collections, products): Promise<any> {
+  async createCustomCollections(
+    collects,
+    collections,
+    products,
+    storeId?
+  ): Promise<any> {
     return this.atomicPhase_(
       async (manager) => {
         const normalizedCollections = collections.map((c) =>
-          this.normalizeCustomCollection_(c)
+          this.normalizeCustomCollection_(c, storeId)
         );
 
         const result = [];
+        const store = await this.getStoreByIdOrName(storeId);
 
         for (const nc of normalizedCollections) {
           let collection = await this.collectionService_
@@ -122,7 +134,7 @@ class ShopifyCollectionService extends TransactionBaseService {
     );
   }
 
-  async createSmartCollections(collections, products): Promise<any> {
+  async createSmartCollections(collections, products, storeId): Promise<any> {
     return this.atomicPhase_(
       async (manager: EntityManager) => {
         if (!collections) {
@@ -139,10 +151,10 @@ class ShopifyCollectionService extends TransactionBaseService {
           ids
         );
 
-        const store = await this.storeService_.retrieve();
-        const defaultCurrency = store.default_currency;
+        const store = await this.getStoreByIdOrName(storeId);
+        const defaultCurrency = store?.default_currency ?? "INR";
         const normalizedCollections = collections.map((c) =>
-          this.normalizeSmartCollection_(c)
+          this.normalizeSmartCollection_(c, storeId)
         );
 
         const result = [];
@@ -320,10 +332,18 @@ class ShopifyCollectionService extends TransactionBaseService {
         const prices = [];
 
         for (const variant of product.variants) {
-          if (variant.prices) {
-            for (const price of variant.prices) {
-              if (price.currency_code === defaultCurrency) {
-                prices.push(price.amount);
+          if (variant.prices || variant.presentment_prices) {
+            const priceStructures =
+              variant.prices || variant.presentment_prices;
+
+            for (const priceStructure of priceStructures) {
+              const { price } = priceStructure;
+              if (price?.currency_code) {
+                if (price.currency_code === defaultCurrency) {
+                  prices.push(price.amount);
+                } else {
+                  prices.push(price);
+                }
               }
             }
           }
@@ -399,10 +419,11 @@ class ShopifyCollectionService extends TransactionBaseService {
     return false;
   }
 
-  normalizeCustomCollection_(shopifyCollection): any {
+  normalizeCustomCollection_(shopifyCollection, storeId: string): any {
     return {
       title: shopifyCollection.title,
       handle: shopifyCollection.handle,
+      store_id: storeId,
       metadata: {
         sh_id: shopifyCollection.id,
         sh_body: shopifyCollection.body_html,
@@ -410,11 +431,12 @@ class ShopifyCollectionService extends TransactionBaseService {
     };
   }
 
-  normalizeSmartCollection_(smartCollection): any {
+  normalizeSmartCollection_(smartCollection, storeId: string): any {
     return {
       collection: {
         title: smartCollection.title,
         handle: smartCollection.handle,
+        store_id: storeId,
         metadata: {
           sh_id: smartCollection.id,
           sh_body: smartCollection.body_html,
@@ -423,6 +445,18 @@ class ShopifyCollectionService extends TransactionBaseService {
       rules: smartCollection.rules,
       disjunctive: smartCollection.disjunctive,
     };
+  }
+  async getStoreByIdOrName(storeId: string): Promise<Store | undefined> {
+    const storeRepo = this.manager_.getCustomRepository(this.storeRepository_);
+    const availableStore =
+      (await storeRepo.findOne({
+        id: storeId,
+      })) ??
+      (await storeRepo.findOne({
+        name: storeId,
+      }));
+
+    return availableStore;
   }
 }
 

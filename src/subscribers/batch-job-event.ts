@@ -84,35 +84,35 @@ class BatchJobEventSubscriber {
     const jobList = jobs[0];
     const jobCount = jobs[1];
 
-    const createdJobs = jobList.filter((job) => {
+    const createdJobs = jobList?.filter((job) => {
       return job.status == BatchJobStatus.CREATED;
     });
 
-    const processingJobs = jobList.filter((job) => {
+    const processingJobs = jobList?.filter((job) => {
       return (
         job.status == BatchJobStatus.PROCESSING ||
         job.status == BatchJobStatus.PRE_PROCESSED
       );
     });
 
-    const failedJobs = jobList.filter((job) => {
+    const failedJobs = jobList?.filter((job) => {
       return job.status == BatchJobStatus.FAILED;
     });
 
-    const completedJobs = jobList.filter((job) => {
+    const completedJobs = jobList?.filter((job) => {
       return job.status == BatchJobStatus.COMPLETED;
     });
 
-    const confirmedJobs = jobList.filter((job) => {
+    const confirmedJobs = jobList?.filter((job) => {
       return job.status == BatchJobStatus.CONFIRMED;
     });
 
     this.logger.info(`Shopfy Jobs Summary: Total Jobs: ${jobCount}
-    created: ${createdJobs.length}
-    confirmed: ${confirmedJobs.length}
-    processing: ${processingJobs.length}
-    completed: ${completedJobs.length},
-    failed: ${failedJobs.length} `);
+    created: ${createdJobs?.length ?? 0}
+    confirmed: ${confirmedJobs?.length ?? 0}
+    processing: ${processingJobs?.length ?? 0}
+    completed: ${completedJobs?.length ?? 0},
+    failed: ${failedJobs?.length ?? 0} `);
   }
   async batchAction(data: { id: string }, eventType: string): Promise<void> {
     try {

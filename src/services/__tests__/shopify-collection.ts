@@ -16,6 +16,8 @@ import LoggerMock from "../__mocks__/logger";
 import { StoreServiceMock } from "../__mocks__/store-service";
 import { ProductOptionRepositoryMock } from "repositories/__mocks__/product-option";
 import { ProductModelMock } from "../../repositories/__mocks__/product";
+import { StoreRepository } from "@medusajs/medusa/dist/repositories/store";
+import { StoreModelMock } from "../../repositories/__mocks__/store";
 
 const mockedLogger: jest.Mocked<Logger> = LoggerMock as any;
 
@@ -29,6 +31,8 @@ const mockedShopifyProductService: jest.Mocked<ShopifyProductService> =
 const mockedStoreService: jest.Mocked<StoreService> = StoreServiceMock as any;
 const mockedProductRepository: jest.Mocked<typeof ProductRepository> =
   ProductModelMock as any;
+const mockedStoreRepository: jest.Mocked<typeof StoreRepository> =
+  StoreModelMock as any;
 
 describe("ShopifyCollectionService", () => {
   describe("create", () => {
@@ -40,6 +44,7 @@ describe("ShopifyCollectionService", () => {
         productService: mockedProductService,
         storeService: mockedStoreService,
         productRepository: mockedProductRepository,
+        storeRepository: mockedStoreRepository,
         logger: mockedLogger,
       },
       {}
@@ -102,8 +107,10 @@ describe("ShopifyCollectionService", () => {
         handle: "spring",
       };
 
-      const normalized =
-        shopifyCollectionService.normalizeCustomCollection_(shopifyCollection);
+      const normalized = shopifyCollectionService.normalizeCustomCollection_(
+        shopifyCollection,
+        "teststore"
+      );
 
       expect(normalized).toMatchSnapshot();
     });
@@ -130,8 +137,10 @@ describe("ShopifyCollectionService", () => {
         admin_graphql_api_id: "gid://shopify/Collection/1063001322",
       };
 
-      const normalized =
-        shopifyCollectionService.normalizeCustomCollection_(shopifyCollection);
+      const normalized = shopifyCollectionService.normalizeCustomCollection_(
+        shopifyCollection,
+        "teststore"
+      );
 
       expect(normalized).toMatchSnapshot();
     });

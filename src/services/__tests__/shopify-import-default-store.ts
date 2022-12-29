@@ -50,6 +50,6 @@ describe("ShopifyService", () => {
       expect(data.products.length).toBe(max_num_products);
       expect(productService.create).toHaveBeenCalledTimes(max_num_products);
       return;
-    }, 14000);
+    }, 140000);
   });
 });

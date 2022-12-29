@@ -7,6 +7,7 @@ Object {
     "sh_body": "spring collection",
     "sh_id": "spring",
   },
+  "store_id": "teststore",
   "title": "Spring",
 }
 `;
@@ -18,6 +19,7 @@ Object {
     "sh_body": null,
     "sh_id": 1063001322,
   },
+  "store_id": "teststore",
   "title": "IPods",
 }
 `;

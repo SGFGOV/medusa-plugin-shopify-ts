@@ -52,6 +52,9 @@ export type ShopifyData = Record<string, unknown>;
 export type ShopifyProduct = ShopifyData & {
   vendor: string;
   id: number;
+  metadata?: {
+    vendor?: string;
+  };
 };
 
 export type ShopifyCollection = ShopifyData & {
@@ -73,8 +76,8 @@ export type ShopifyPath =
   | "custom_collections"
   | "collects"
   | "metafields";
-export type ShopifyJobResultType = {
+export type ShopifyJobResult = {
   advancement_count: number;
-  shopifyData: ShopifyData[];
-  path: string;
+  shopifyData: ShopifyData[] | ShopifyData[][];
+  path: ShopifyPath;
 };
