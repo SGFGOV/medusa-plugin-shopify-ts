@@ -9,7 +9,7 @@ import {
 import { ProductRepository } from "@medusajs/medusa/dist/repositories/product";
 import { StoreRepository } from "@medusajs/medusa/dist/repositories/store";
 import { Logger } from "@medusajs/medusa/dist/types/global";
-import { ClientOptions } from "interfaces/shopify-interfaces";
+import { ClientOptions, ShopifyProducts } from "interfaces/shopify-interfaces";
 import { BaseService } from "medusa-interfaces";
 import { EntityManager, ObjectType } from "typeorm";
 import { removeIndex } from "../utils/remove-index";
@@ -93,8 +93,8 @@ class ShopifyCollectionService extends TransactionBaseService {
   async createCustomCollections(
     collects,
     collections,
-    products,
-    storeId?
+    products: ShopifyProducts,
+    storeId?: string
   ): Promise<any> {
     return this.atomicPhase_(
       async (manager) => {
@@ -206,7 +206,11 @@ class ShopifyCollectionService extends TransactionBaseService {
     );
   }
 
-  getCustomCollectionProducts_(shCollectionId, collects, products): any {
+  getCustomCollectionProducts_(
+    shCollectionId,
+    collects,
+    products: ShopifyProducts
+  ): any {
     const medusaProductIds = products.reduce((prev, curr) => {
       if (curr.external_id) {
         prev[curr.external_id] = curr.id;

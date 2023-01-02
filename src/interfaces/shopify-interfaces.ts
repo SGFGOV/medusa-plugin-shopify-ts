@@ -1,4 +1,4 @@
-import { BatchJob, User } from "@medusajs/medusa";
+import { BatchJob, Product, User } from "@medusajs/medusa";
 import { RestClient } from "@shopify/shopify-api/dist/clients/rest";
 import ShopifyService from "services/shopify";
 
@@ -51,7 +51,8 @@ export interface FetchedShopifyData {
 export type ShopifyData = Record<string, unknown>;
 export type ShopifyProduct = ShopifyData & {
   vendor: string;
-  id: number;
+  id: string;
+  external_id: string;
   metadata?: {
     vendor?: string;
   };
@@ -78,6 +79,6 @@ export type ShopifyPath =
   | "metafields";
 export type ShopifyJobResult = {
   advancement_count: number;
-  shopifyData: ShopifyData[] | ShopifyData[][];
+  shopifyData: ShopifyData[] | ShopifyData[][] | Product[];
   path: ShopifyPath;
 };

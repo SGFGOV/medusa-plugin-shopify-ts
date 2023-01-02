@@ -2,6 +2,7 @@ import {
   AbstractBatchJobStrategy,
   BatchJobService,
   BatchJobStatus,
+  Product,
   ProductService,
   ProductStatus,
   StoreService,
@@ -45,7 +46,7 @@ class ShopifyImportStrategy extends AbstractBatchJobStrategy {
   productService_: ProductService;
   storeService: StoreService;
   logger: Logger;
-  resolvedProducts: ShopifyProducts;
+  resolvedProducts: Product[];
 
   constructor(container: ShopifyImportStrategyProps) {
     super(container);
@@ -91,7 +92,7 @@ class ShopifyImportStrategy extends AbstractBatchJobStrategy {
     shopifyData: ShopifyData[],
     shopifyImportRequest: ShopifyImportRequest,
     path: string
-  ): Promise<ShopifyData[] | ShopifyData[][]> {
+  ): Promise<ShopifyData[] | ShopifyData[][] | Product[]> {
     if (!shopifyData?.length) {
       return;
     }
@@ -120,14 +121,21 @@ class ShopifyImportStrategy extends AbstractBatchJobStrategy {
     shopifyImportRequest: ShopifyImportRequest,
     collectionType: "smart_collections" | "custom_collections"
   ): Promise<ShopifyCollections | ShopifyCollections[]> {
-    const products = await this.awaitPathCompletion(
+    const rawProductsFromBatches = await this.awaitPathCompletion(
       shopifyImportRequest,
       "products"
     );
-
-    products.map((p) => {
-      this.resolvedProducts.push(...(p.shopifyData as ShopifyProducts));
+    const importedProductDataFromBatchResult = [];
+    rawProductsFromBatches.map((r) => {
+      importedProductDataFromBatchResult.push(...r.shopifyData);
     });
+    this.resolvedProducts = await Promise.all(
+      importedProductDataFromBatchResult.map(async (product) => {
+        return await this.productService_.retrieveByExternalId(
+          product.external_id
+        );
+      })
+    );
 
     this.collects = await this.awaitPathCompletion(
       shopifyImportRequest,
@@ -137,7 +145,7 @@ class ShopifyImportStrategy extends AbstractBatchJobStrategy {
     const vendors = [
       ...new Set(
         this.resolvedProducts.map((product) => {
-          return product.vendor ?? product.metadata.vendor;
+          return product.metadata.vendor as string;
         })
       ),
     ];
@@ -145,7 +153,7 @@ class ShopifyImportStrategy extends AbstractBatchJobStrategy {
       const result = vendors.map(async (vendor) => {
         const storeId = await this.fetchStore(vendor);
         const storeProducts = this.resolvedProducts.filter((product) => {
-          return product.vendor == vendor;
+          return product.metadata.vendor == vendor;
         });
         const storeCollectionResult = await this.addProductsToStore(
           collectionType,
@@ -162,7 +170,7 @@ class ShopifyImportStrategy extends AbstractBatchJobStrategy {
         collectionType,
         storeId,
         theCollection,
-        products
+        this.resolvedProducts
       );
       return storeCollectionResult;
     }
@@ -298,7 +306,7 @@ class ShopifyImportStrategy extends AbstractBatchJobStrategy {
   async processProducts(
     products: ShopifyProducts,
     shopifyImportRequest: ShopifyImportRequest
-  ): Promise<ShopifyProducts> {
+  ): Promise<Product[]> {
     return await this.atomicPhase_(async (transactionManager) => {
       const max_products = shopifyImportRequest.shopify_product_ids
         ? Math.min(

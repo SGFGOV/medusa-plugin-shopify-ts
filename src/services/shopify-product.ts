@@ -1,6 +1,7 @@
 /* eslint-disable valid-jsdoc */
 import {
   EventBusService,
+  Product,
   ProductStatus,
   ProductVariantService,
   ShippingProfileService,
@@ -157,7 +158,7 @@ class ShopifyProductService extends TransactionBaseService {
    * @param {string} collectionId optional
    * @return {Product} the created product
    */
-  async create(data, store_id?: string): Promise<any> {
+  async create(data, store_id?: string): Promise<Product> {
     const result = await this.atomicPhase_(
       async (manager): Promise<any> => {
         const ignore = await this.redis_.shouldIgnore(
@@ -250,7 +251,7 @@ class ShopifyProductService extends TransactionBaseService {
     return await result;
   }
 
-  async update(existing, shopifyUpdate): Promise<any> {
+  async update(existing, shopifyUpdate): Promise<Product> {
     return this.atomicPhase_(
       async (manager): Promise<any> => {
         const ignore = await this.redis_.shouldIgnore(
