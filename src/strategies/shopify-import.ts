@@ -127,14 +127,15 @@ class ShopifyImportStrategy extends AbstractBatchJobStrategy {
       shopifyImportRequest,
       "products"
     );
+    this.logger.info(`Retrived products from ${rawProductsFromBatches.length}`);
     const importedProductDataFromBatchResult: ShopifyProducts = [];
-    rawProductsFromBatches.map((r) => {
+    rawProductsFromBatches.map((r, index) => {
       if (r && r?.shopifyData) {
         importedProductDataFromBatchResult.push(
           ...(r.shopifyData as ShopifyProducts)
         );
       } else {
-        this.logger.warn("no data in batch");
+        this.logger.warn(`no data in batch ${index}`);
       }
     });
     const retrievedProductPromises = importedProductDataFromBatchResult.map(
@@ -306,7 +307,8 @@ class ShopifyImportStrategy extends AbstractBatchJobStrategy {
     );
     const retrievedBatchJobList = completedBatches[0];
     const completedJobsResultOfInterest = retrievedBatchJobList.filter(
-      (job) => job.context.path == path
+      (job) =>
+        job.context.path == path && job.status == BatchJobStatus.COMPLETED
     );
 
     return completedJobsResultOfInterest.map((job) => {
