@@ -127,7 +127,11 @@ class ShopifyImportStrategy extends AbstractBatchJobStrategy {
     );
     const importedProductDataFromBatchResult = [];
     rawProductsFromBatches.map((r) => {
-      importedProductDataFromBatchResult.push(...r.shopifyData);
+      if (r && r?.shopifyData) {
+        importedProductDataFromBatchResult.push(...r.shopifyData);
+      } else {
+        this.logger.warn("no data in batch");
+      }
     });
     this.resolvedProducts = await Promise.all(
       importedProductDataFromBatchResult.map(async (product) => {
