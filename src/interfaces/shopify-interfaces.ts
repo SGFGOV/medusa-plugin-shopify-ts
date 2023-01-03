@@ -52,7 +52,6 @@ export type ShopifyData = Record<string, unknown>;
 export type ShopifyProduct = ShopifyData & {
   vendor: string;
   id: string;
-  external_id: string;
   metadata?: {
     vendor?: string;
   };

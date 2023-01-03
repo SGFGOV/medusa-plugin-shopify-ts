@@ -1,5 +1,6 @@
 /* eslint-disable valid-jsdoc */
 import {
+  Product,
   ProductCollectionService,
   ProductService,
   Store,
@@ -93,7 +94,7 @@ class ShopifyCollectionService extends TransactionBaseService {
   async createCustomCollections(
     collects,
     collections,
-    products: ShopifyProducts,
+    products: Product[],
     storeId?: string
   ): Promise<any> {
     return this.atomicPhase_(
@@ -207,9 +208,9 @@ class ShopifyCollectionService extends TransactionBaseService {
   }
 
   getCustomCollectionProducts_(
-    shCollectionId,
+    shCollectionId: string,
     collects,
-    products: ShopifyProducts
+    products: Product[]
   ): any {
     const medusaProductIds = products.reduce((prev, curr) => {
       if (curr.external_id) {
