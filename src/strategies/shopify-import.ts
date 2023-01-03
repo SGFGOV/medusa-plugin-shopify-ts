@@ -141,7 +141,9 @@ class ShopifyImportStrategy extends AbstractBatchJobStrategy {
     const retrievedProductPromises = importedProductDataFromBatchResult.map(
       async (product) => {
         try {
-          return await this.productService_.retrieveByExternalId(product.id);
+          return await this.productService_.retrieveByExternalId(
+            product.external_id as string
+          );
         } catch (e) {
           this.logger.error(`${JSON.stringify(e)}`);
           return;

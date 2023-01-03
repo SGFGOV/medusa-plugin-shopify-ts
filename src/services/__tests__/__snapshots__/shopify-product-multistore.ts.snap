@@ -33,9 +33,6 @@ Object {
       ],
     },
   ],
-  "product_type": Object {
-    "value": "Cult Products",
-  },
   "profile_id": undefined,
   "status": "proposed",
   "store_id": "mockstore",
@@ -55,6 +52,9 @@ Object {
   ],
   "thumbnail": "https://cdn.shopify.com/s/files/1/0006/9093/3842/products/ipod-nano.png?v=1633120966",
   "title": "IPod Nano - 8GB",
+  "type": Object {
+    "value": "Cult Products",
+  },
   "variants": Array [
     Object {
       "allow_backorder": true,

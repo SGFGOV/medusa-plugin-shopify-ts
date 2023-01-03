@@ -1,20 +1,15 @@
 import {
   EventBusService,
   Product,
-  ProductCollectionService,
-  ProductService,
   ProductVariantService,
   ShippingProfileService,
-  StoreService,
 } from "@medusajs/medusa";
-import { ProductRepository } from "@medusajs/medusa/dist/repositories/product";
 import { Logger } from "@medusajs/medusa/dist/types/global";
 import { MockManager } from "medusa-test-utils";
 import ShopifyClientService from "services/shopify-client";
 import ShopifyRedisService from "services/shopify-redis";
 
 import ShopifyProductService from "../shopify-product";
-import { ProductServiceMock } from "../__mocks__/product-service";
 import { ProductVariantServiceMock } from "../__mocks__/product-variant";
 import { ShippingProfileServiceMock } from "../__mocks__/shipping-profile";
 import { ShopifyClientServiceMock } from "../__mocks__/shopify-client";

@@ -41,7 +41,7 @@ export type NormalisedProduct = {
   handle: string;
   description: string;
   profile_id: string;
-  product_type: {
+  type: {
     value: string;
   };
   is_giftcard: boolean;
@@ -606,7 +606,7 @@ class ShopifyProductService extends TransactionBaseService {
       handle: product.handle,
       description: product.body_html,
       profile_id: product.profile_id,
-      product_type: {
+      type: {
         value: product.product_type,
       },
       is_giftcard: product.product_type === "Gift Cards",
