@@ -9,6 +9,7 @@ import {
 } from "@medusajs/medusa";
 import { Logger } from "@medusajs/medusa/dist/types/global";
 import {
+  ShopifyCollection,
   ShopifyCollections,
   ShopifyData,
   ShopifyImportRequest,
@@ -34,7 +35,7 @@ export interface ShopifyImportStrategyProps {
 }
 
 class ShopifyImportStrategy extends AbstractBatchJobStrategy {
-  collects: any;
+  collects: ShopifyCollections;
   buildTemplate(): Promise<string> {
     throw new Error("Method not implemented.");
   }
@@ -108,7 +109,7 @@ class ShopifyImportStrategy extends AbstractBatchJobStrategy {
       case "smart_collections":
       case "custom_collections":
         return await this.processCollectionTypes(
-          shopifyData,
+          shopifyData as ShopifyCollections,
           shopifyImportRequest,
           path
         );
@@ -119,7 +120,7 @@ class ShopifyImportStrategy extends AbstractBatchJobStrategy {
   }
 
   async processCollectionTypes(
-    theCollection: ShopifyData[],
+    theCollections: ShopifyCollections,
     shopifyImportRequest: ShopifyImportRequest,
     collectionType: "smart_collections" | "custom_collections"
   ): Promise<ShopifyCollections | ShopifyCollections[]> {
@@ -151,10 +152,11 @@ class ShopifyImportStrategy extends AbstractBatchJobStrategy {
       }
     );
     this.resolvedProducts = await Promise.all(retrievedProductPromises);
-
-    this.collects = await this.awaitPathCompletion(
-      shopifyImportRequest,
-      "collects"
+    this.collects = [];
+    (await this.awaitPathCompletion(shopifyImportRequest, "collects")).map(
+      (p) => {
+        this.collects.push(...(p.shopifyData as ShopifyCollections));
+      }
     );
 
     const vendors = [
@@ -170,31 +172,33 @@ class ShopifyImportStrategy extends AbstractBatchJobStrategy {
         const storeProducts = this.resolvedProducts.filter((product) => {
           return product.metadata.vendor == vendor;
         });
-        const storeCollectionResult = await this.addProductsToStore(
-          collectionType,
-          storeId,
-          theCollection,
-          storeProducts
-        );
+        const storeCollectionResult =
+          await this.addProductsToMedusaStoreCollection(
+            collectionType,
+            storeId,
+            theCollections,
+            storeProducts
+          );
         return storeCollectionResult;
       });
       return Promise.all(result);
     } else {
       const storeId = await this.fetchStore();
-      const storeCollectionResult = await this.addProductsToStore(
-        collectionType,
-        storeId,
-        theCollection,
-        this.resolvedProducts
-      );
+      const storeCollectionResult =
+        await this.addProductsToMedusaStoreCollection(
+          collectionType,
+          storeId,
+          theCollections,
+          this.resolvedProducts
+        );
       return storeCollectionResult;
     }
   }
 
-  async addProductsToStore(
+  async addProductsToMedusaStoreCollection(
     collectionType: string,
-    storeId,
-    theCollection,
+    storeId: string,
+    theCollection: ShopifyCollections,
     products
   ): Promise<ShopifyCollections> {
     switch (collectionType) {
