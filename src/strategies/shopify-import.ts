@@ -28,6 +28,7 @@ export interface ShopifyImportStrategyProps {
   shopifyProductService: ShopifyProductService;
   shopifyCollectionService: ShopifyCollectionService;
   shopifyService: ShopifyService;
+  productService: ProductService;
   storeService: StoreService;
   logger: Logger;
 }
@@ -52,6 +53,7 @@ class ShopifyImportStrategy extends AbstractBatchJobStrategy {
     super(container);
     this.batchJobService_ = container.batchJobService;
     this.shopifyService_ = container.shopifyService;
+    this.productService_ = container.productService;
     this.storeService = container.storeService;
     this.logger = container.logger;
     this.resolvedProducts = [];
