@@ -1,6 +1,7 @@
 /* eslint-disable valid-jsdoc */
 import {
   EventBusService,
+  Product,
   ProductStatus,
   ProductVariantService,
   ShippingProfileService,
@@ -40,7 +41,7 @@ export type NormalisedProduct = {
   handle: string;
   description: string;
   profile_id: string;
-  product_type: {
+  type: {
     value: string;
   };
   is_giftcard: boolean;
@@ -157,7 +158,7 @@ class ShopifyProductService extends TransactionBaseService {
    * @param {string} collectionId optional
    * @return {Product} the created product
    */
-  async create(data, store_id?: string): Promise<any> {
+  async create(data, store_id?: string): Promise<Product> {
     const result = await this.atomicPhase_(
       async (manager): Promise<any> => {
         const ignore = await this.redis_.shouldIgnore(
@@ -250,7 +251,7 @@ class ShopifyProductService extends TransactionBaseService {
     return await result;
   }
 
-  async update(existing, shopifyUpdate): Promise<any> {
+  async update(existing, shopifyUpdate): Promise<Product> {
     return this.atomicPhase_(
       async (manager): Promise<any> => {
         const ignore = await this.redis_.shouldIgnore(
@@ -605,7 +606,7 @@ class ShopifyProductService extends TransactionBaseService {
       handle: product.handle,
       description: product.body_html,
       profile_id: product.profile_id,
-      product_type: {
+      type: {
         value: product.product_type,
       },
       is_giftcard: product.product_type === "Gift Cards",

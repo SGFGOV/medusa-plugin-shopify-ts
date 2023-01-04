@@ -1,6 +1,6 @@
 import fifty_products from "./test-data_products.fixture";
-import fifty_collections from "./test-data-collections.fixture";
-import fifity_smart_collections from "./test-data-smart-collections";
+import fifty_collections from "./test-data-collection-2.fixture";
+import fifity_smart_collections from "./test-data-smart-collections.fixture";
 
 let i = 0;
 for (const collection of fifty_collections) {

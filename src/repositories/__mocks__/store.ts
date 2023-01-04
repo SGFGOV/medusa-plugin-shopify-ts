@@ -1,15 +1,31 @@
 import { Store } from "@medusajs/medusa"
 import { IdMap } from "medusa-test-utils"
 
-export const store = {"test store":{
+type StoreMock ={
+  id:string;
+  name:string;
+  currencies:string[],
+  default_currency:"INR",
+} 
+type StoreMockList = Record<string,StoreMock>
+
+export const store:StoreMockList = {"test store":{
   id: IdMap.getId("store"),
   name: "test store",
-  currencies: ["DKK"],
+  currencies: ["DKK","INR"],
+  default_currency:"INR"
 },
 teststore:{
-  id: IdMap.getId("store"),
+  id: IdMap.getId("teststore"),
   name: "teststore",
   currencies: ["DKK"],
+  default_currency:"INR",
+},
+dummyStore:{
+  id: IdMap.getId("dummyStore"),
+  name: "teststore",
+  currencies: ["DKK"],
+  default_currency:"INR",
 }}
 
 const stores = new Map<string,any>()
@@ -17,11 +33,36 @@ stores.set("test store",(store["test store"]));
 stores.set("teststore",(store["teststore"]));
 
 export const StoreModelMock = {
-  create: jest.fn().mockReturnValue(Promise.resolve()),
+  create: jest.fn().mockImplementation((storenamr)=>{
+    const result = {
+      id: IdMap.getId(storenamr),
+      name: "storenamr",
+      currencies: ["DKK","INR"],
+      default_currency:"INR"
+    }
+    stores.set(storenamr,result);
+    return Promise.resolve(result)}),
   updateOne: jest.fn().mockImplementation((query, update) => {
     return Promise.resolve()
   }),
   findOne: jest.fn().mockImplementation(query => {
-    return Promise.resolve(stores.get(query.name))
+    if(query.name){
+    const result = stores.get(query.name)
+    if(!result)
+    {
+      
+    }
+    return Promise.resolve(result)
+    }
+    if(query.id)
+    { let result:StoreMock;
+      stores.forEach((value)=>
+      {
+        if(value.id == query.id){
+        result = value;
+        }
+      })
+      return Promise.resolve(result)
+    }
   }),
 }

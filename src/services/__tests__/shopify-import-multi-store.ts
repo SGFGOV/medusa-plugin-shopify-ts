@@ -62,11 +62,18 @@ export const testImport = (
 };
 
 describe("ShopifyService", () => {
-  describe("Testing Shopify Service", () => {
+  describe("Testing default store", () => {
     beforeEach(async () => {
       jest.clearAllMocks();
     });
     testImport(" import into default store", 10, false, false);
+    // testImport("import into vendor store", 50, true, true);
+  });
+  describe("Testing Import vendor store", () => {
+    beforeEach(async () => {
+      jest.clearAllMocks();
+    });
+    // testImport(" import into default store", 10, false, false);
     testImport("import into vendor store", 50, true, true);
   });
 });

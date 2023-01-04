@@ -42,4 +42,9 @@ export const BatchJobRepositoryMock = {
     });
     return arr;
   }),
+  findAndCount:jest.fn().mockImplementation(() => {
+    
+      return eventMap.entries();
+
+  }),
 }

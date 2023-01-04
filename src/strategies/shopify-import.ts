@@ -2,16 +2,18 @@ import {
   AbstractBatchJobStrategy,
   BatchJobService,
   BatchJobStatus,
+  Product,
   ProductService,
   ProductStatus,
   StoreService,
 } from "@medusajs/medusa";
 import { Logger } from "@medusajs/medusa/dist/types/global";
 import {
+  ShopifyCollection,
   ShopifyCollections,
   ShopifyData,
   ShopifyImportRequest,
-  ShopifyJobResultType,
+  ShopifyJobResult,
   ShopifyPath,
   ShopifyProducts,
 } from "../interfaces/shopify-interfaces";
@@ -27,12 +29,13 @@ export interface ShopifyImportStrategyProps {
   shopifyProductService: ShopifyProductService;
   shopifyCollectionService: ShopifyCollectionService;
   shopifyService: ShopifyService;
+  productService: ProductService;
   storeService: StoreService;
   logger: Logger;
 }
 
 class ShopifyImportStrategy extends AbstractBatchJobStrategy {
-  collects: any;
+  collects: ShopifyCollections;
   buildTemplate(): Promise<string> {
     throw new Error("Method not implemented.");
   }
@@ -45,14 +48,16 @@ class ShopifyImportStrategy extends AbstractBatchJobStrategy {
   productService_: ProductService;
   storeService: StoreService;
   logger: Logger;
-  resolvedProducts: ShopifyProducts;
+  resolvedProducts: Product[];
 
   constructor(container: ShopifyImportStrategyProps) {
     super(container);
     this.batchJobService_ = container.batchJobService;
     this.shopifyService_ = container.shopifyService;
+    this.productService_ = container.productService;
     this.storeService = container.storeService;
     this.logger = container.logger;
+    this.resolvedProducts = [];
   }
 
   async processJob(batchJobId: string): Promise<void> {
@@ -73,7 +78,7 @@ class ShopifyImportStrategy extends AbstractBatchJobStrategy {
     );
 
     return await this.atomicPhase_(async (transactionManager) => {
-      const jobResult: ShopifyJobResultType = {
+      const jobResult: ShopifyJobResult = {
         advancement_count: retrievedShopifyData.length,
         shopifyData: result,
         path: path,
@@ -85,11 +90,12 @@ class ShopifyImportStrategy extends AbstractBatchJobStrategy {
         });
     });
   }
+
   async processShopifyPageData(
     shopifyData: ShopifyData[],
     shopifyImportRequest: ShopifyImportRequest,
     path: string
-  ): Promise<ShopifyData[]> {
+  ): Promise<ShopifyData[] | ShopifyData[][] | Product[]> {
     if (!shopifyData?.length) {
       return;
     }
@@ -102,8 +108,8 @@ class ShopifyImportStrategy extends AbstractBatchJobStrategy {
         );
       case "smart_collections":
       case "custom_collections":
-        return await this.processCollectionType(
-          shopifyData,
+        return await this.processCollectionTypes(
+          shopifyData as ShopifyCollections,
           shopifyImportRequest,
           path
         );
@@ -113,41 +119,147 @@ class ShopifyImportStrategy extends AbstractBatchJobStrategy {
     }
   }
 
-  async processCollectionType(
-    theCollection: ShopifyData[],
+  async processCollectionTypes(
+    theCollections: ShopifyCollections,
     shopifyImportRequest: ShopifyImportRequest,
     collectionType: "smart_collections" | "custom_collections"
-  ): Promise<ShopifyCollections> {
-    const products = await this.awaitPathCompletion(
+  ): Promise<ShopifyCollections | ShopifyCollections[]> {
+    const rawProductsFromBatches = await this.awaitPathCompletion(
       shopifyImportRequest,
       "products"
     );
-    this.resolvedProducts = products;
-    this.collects = await this.awaitPathCompletion(
-      shopifyImportRequest,
-      "collects"
+    this.logger.info(`Retrived products from ${rawProductsFromBatches.length}`);
+    const importedProductDataFromBatchResult: ShopifyProducts = [];
+    rawProductsFromBatches.map((r, index) => {
+      if (r && r?.shopifyData) {
+        importedProductDataFromBatchResult.push(
+          ...(r.shopifyData as ShopifyProducts)
+        );
+      } else {
+        this.logger.warn(`no data in batch ${index}`);
+      }
+    });
+    const retrievedProductPromises = importedProductDataFromBatchResult.map(
+      async (product) => {
+        try {
+          return await this.productService_.retrieveByExternalId(
+            product.external_id as string
+          );
+        } catch (e) {
+          this.logger.error(`${JSON.stringify(e)}`);
+          return;
+        }
+      }
     );
+    this.resolvedProducts = await Promise.all(retrievedProductPromises);
+    this.collects = [];
+    (await this.awaitPathCompletion(shopifyImportRequest, "collects")).map(
+      (p) => {
+        this.collects.push(...(p.shopifyData as ShopifyCollections));
+      }
+    );
+
+    const vendors = [
+      ...new Set(
+        this.resolvedProducts.map((product) => {
+          return product.metadata.vendor as string;
+        })
+      ),
+    ];
+    if (this.shopifyService_.options.enable_vendor_store) {
+      const result = vendors.map(async (vendor) => {
+        const storeId = await this.fetchStore(vendor);
+        const storeProducts = this.resolvedProducts.filter((product) => {
+          return product.metadata.vendor == vendor;
+        });
+        const storeCollectionResult =
+          await this.addProductsToMedusaStoreCollection(
+            collectionType,
+            storeId,
+            theCollections,
+            storeProducts
+          );
+        return storeCollectionResult;
+      });
+      return Promise.all(result);
+    } else {
+      const storeId = await this.fetchStore();
+      const storeCollectionResult =
+        await this.addProductsToMedusaStoreCollection(
+          collectionType,
+          storeId,
+          theCollections,
+          this.resolvedProducts
+        );
+      return storeCollectionResult;
+    }
+  }
+
+  async addProductsToMedusaStoreCollection(
+    collectionType: string,
+    storeId: string,
+    theCollection: ShopifyCollections,
+    products
+  ): Promise<ShopifyCollections> {
     switch (collectionType) {
       case "custom_collections":
         return await this.atomicPhase_(async (transactionManager) => {
           return await this.shopifyService_.shopifyCollectionService_
             .withTransaction(transactionManager)
-            .createCustomCollections(this.collects, theCollection, products);
+            .createCustomCollections(
+              this.collects,
+              theCollection,
+              products,
+              storeId
+            );
         });
       case "smart_collections":
         return await this.atomicPhase_(async (transactionManager) => {
           return await await this.shopifyService_.shopifyCollectionService_
             .withTransaction(transactionManager)
-            .createSmartCollections(theCollection, products);
+            .createSmartCollections(theCollection, products, storeId);
         });
     }
+  }
+
+  async fetchStore(vendor?: string): Promise<string> {
+    let store_id: string;
+
+    if (this.shopifyService_.options.enable_vendor_store) {
+      try {
+        const vendorStore = await this.shopifyService_.getStoreByName(vendor);
+        store_id = vendorStore.id;
+      } catch (e) {
+        this.logger.warn(`${vendor} store doesn't exist`);
+      }
+
+      if (!store_id && this.shopifyService_.options.auto_create_store) {
+        let store = await this.storeService.create();
+        store = await this.storeService.update({
+          name: vendor,
+          id: store.id,
+        } as any);
+        store_id = store.id;
+      } else {
+        throw new Error(
+          "trying to import products for a vendor who isn't available"
+        );
+      }
+    } else {
+      store_id = (
+        await this.shopifyService_.getStoreByName(
+          this.shopifyService_.options.default_store_name
+        )
+      ).id;
+    }
+    return store_id;
   }
 
   async awaitPathCompletion(
     shopifyImportRequest: ShopifyImportRequest,
     path: ShopifyPath
-  ): Promise<any> {
-    let pathObjects = [];
+  ): Promise<ShopifyJobResult[]> {
+    const pathObjects = [];
 
     let recievedPathEntries = [];
     while (recievedPathEntries.length == 0) {
@@ -179,36 +291,34 @@ class ShopifyImportStrategy extends AbstractBatchJobStrategy {
             .retrieve(batchPath.batchJobId);
           status = job.status;
           if (status == BatchJobStatus.COMPLETED) {
-            return job.result as ShopifyJobResultType;
+            return job.result as ShopifyJobResult;
           } else {
             await sleep(1000);
           }
         }
       });
       const allProducts = await Promise.all(result);
-      allProducts.map((shopifyBatchPath) => {
-        pathObjects = pathObjects.concat(shopifyBatchPath.shopifyData);
-      });
 
-      return pathObjects;
+      return allProducts;
     });
   }
-  async fetchCompletedJobResults(path: string): Promise<any> {
+  async fetchCompletedJobResults(path: string): Promise<ShopifyJobResult[]> {
     const completedBatches = await this.batchJobService_.listAndCount(
       {
-        status: [BatchJobStatus.COMPLETED],
+        type: [ShopifyImportStrategy.batchType],
       },
       {
-        relations: ["id", "result", "context"],
+        take: 1e9,
       }
     );
     const retrievedBatchJobList = completedBatches[0];
     const completedJobsResultOfInterest = retrievedBatchJobList.filter(
-      (job) => job.context.path == path
+      (job) =>
+        job.context.path == path && job.status == BatchJobStatus.COMPLETED
     );
 
     return completedJobsResultOfInterest.map((job) => {
-      const result: ShopifyJobResultType = job.result as ShopifyJobResultType;
+      const result: ShopifyJobResult = job.result as ShopifyJobResult;
       return result;
     });
   }
@@ -216,7 +326,7 @@ class ShopifyImportStrategy extends AbstractBatchJobStrategy {
   async processProducts(
     products: ShopifyProducts,
     shopifyImportRequest: ShopifyImportRequest
-  ): Promise<ShopifyProducts> {
+  ): Promise<Product[]> {
     return await this.atomicPhase_(async (transactionManager) => {
       const max_products = shopifyImportRequest.shopify_product_ids
         ? Math.min(
@@ -249,35 +359,8 @@ class ShopifyImportStrategy extends AbstractBatchJobStrategy {
           );
           continue;
         }
-        let store_id: string;
-        const default_store_name = shopifyImportRequest.default_store_name;
-        if (this.shopifyService_.options.enable_vendor_store) {
-          try {
-            const vendorStore = await this.shopifyService_.getStoreByName(
-              product.vendor
-            );
-            store_id = vendorStore.id;
-          } catch (e) {
-            this.logger.warn(`${product.vendor} store doesn't exist`);
-          }
+        const store_id = await this.fetchStore(product.vendor);
 
-          if (!store_id && this.shopifyService_.options.auto_create_store) {
-            let store = await this.storeService.create();
-            store = await this.storeService.update({
-              name: product.vendor,
-              id: store.id,
-            } as any);
-            store_id = store.id;
-          } else {
-            throw new Error(
-              "trying to import products for a vendor who isn't available"
-            );
-          }
-        } else {
-          store_id = (
-            await this.shopifyService_.getStoreByName(default_store_name)
-          ).id;
-        }
         const result = await this.shopifyService_.shopifyProductService_
           .withTransaction(transactionManager)
           .create(product, store_id);
