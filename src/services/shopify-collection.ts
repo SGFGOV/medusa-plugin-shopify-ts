@@ -107,6 +107,7 @@ class ShopifyCollectionService extends TransactionBaseService {
         const store = await this.getStoreByIdOrName(storeId);
 
         for (const nc of normalizedCollections) {
+          this.logger.info(`creating/updating custom collection ${nc.handle}`);
           let collection = await this.collectionService_
             .retrieveByHandle(nc.handle)
             .catch((_) => undefined);
@@ -122,9 +123,9 @@ class ShopifyCollectionService extends TransactionBaseService {
             collects,
             products
           );
-
+          this.logger.info(`adding products to  collection ${nc.handle}`);
           await this.addProductsToCollection(collection.id, productIds);
-
+          this.logger.info(`completed processing collection ${nc.handle}`);
           result.push(collection);
         }
 
@@ -164,7 +165,7 @@ class ShopifyCollectionService extends TransactionBaseService {
           let collection = await this.collectionService_
             .retrieveByHandle(nc.collection.handle)
             .catch((_) => undefined);
-
+          this.logger.info(`creating/updating smart collection ${nc.handle}`);
           if (!collection) {
             collection = await this.collectionService_
               .withTransaction(manager)
@@ -177,7 +178,7 @@ class ShopifyCollectionService extends TransactionBaseService {
             nc.disjunctive ?? false,
             defaultCurrency
           );
-
+          this.logger.info(`adding products to  collection ${nc.handle}`);
           if (validProducts.length) {
             const productIds = validProducts.map((p) => p.id);
             await this.addProductsToCollection(collection.id, productIds);
@@ -211,7 +212,7 @@ class ShopifyCollectionService extends TransactionBaseService {
     shCollectionId: string,
     collects,
     products: Product[]
-  ): any {
+  ): string[] {
     const medusaProductIds = products.reduce((prev, curr) => {
       if (curr.external_id) {
         prev[curr.external_id] = curr.id;
@@ -242,8 +243,7 @@ class ShopifyCollectionService extends TransactionBaseService {
         removeIndex(products, productToRemove);
       }
     }
-
-    return productIdsToAdd;
+    return productIdsToAdd.filter((p) => p != undefined);
   }
 
   getValidProducts_(rules, products, disjunctive, defaultCurrency): any {
