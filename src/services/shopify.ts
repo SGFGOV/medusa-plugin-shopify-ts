@@ -63,21 +63,21 @@ class ShopifyService extends TransactionBaseService {
   storeService_: StoreService;
   logger: Logger;
   buildService_: any;
-  lastFetchedProducts: FetchedShopifyData;
-  lastFetchedCustomCollections: FetchedShopifyData;
-  lastFetchedSmartCollections: FetchedShopifyData;
+  lastFetchedProducts: ShopifyData;
+  lastFetchedCustomCollections: ShopifyData;
+  lastFetchedSmartCollections: ShopifyData;
   batchJobService_: BatchJobService;
 
   userService: UserService;
   configModule: ConfigModule;
   eventBus_: EventBusService;
-  lastFetchedCollects: FetchedShopifyData;
+  lastFetchedCollects: ShopifyData;
   defaultBatchActionNotifier: BatchActionCallBack;
   requestBatchTasks: Map<string, ShopifyBatchTask[]> = new Map<
     string,
     ShopifyBatchTask[]
   >();
-  lastFetchedMetafields: FetchedShopifyData;
+  lastFetchedMetafields: ShopifyData;
 
   constructor(container: ShopifyServiceParams, options: ClientOptions) {
     super(container);
@@ -147,35 +147,37 @@ class ShopifyService extends TransactionBaseService {
         userId,
         gotPageCallBack
       );
-    this.lastFetchedCollects =
-      await this.fetchFromShopifyAndProcessSingleCategory(
-        shopifyRequest,
-        "collects",
-        userId,
-        gotPageCallBack
-      );
-    this.lastFetchedCustomCollections =
-      await this.fetchFromShopifyAndProcessSingleCategory(
-        shopifyRequest,
-        "custom_collections",
-        userId,
-        gotPageCallBack
-      );
-    this.lastFetchedSmartCollections =
-      await this.fetchFromShopifyAndProcessSingleCategory(
-        shopifyRequest,
-        "smart_collections",
-        userId,
-        gotPageCallBack
-      );
+    if (this.lastFetchedProducts?.length > 0) {
+      this.lastFetchedCollects =
+        await this.fetchFromShopifyAndProcessSingleCategory(
+          shopifyRequest,
+          "collects",
+          userId,
+          gotPageCallBack
+        );
+      this.lastFetchedCustomCollections =
+        await this.fetchFromShopifyAndProcessSingleCategory(
+          shopifyRequest,
+          "custom_collections",
+          userId,
+          gotPageCallBack
+        );
+      this.lastFetchedSmartCollections =
+        await this.fetchFromShopifyAndProcessSingleCategory(
+          shopifyRequest,
+          "smart_collections",
+          userId,
+          gotPageCallBack
+        );
 
-    return {
-      products: this.lastFetchedProducts,
-      customCollections: this.lastFetchedCustomCollections,
-      smartCollections: this.lastFetchedSmartCollections,
-      collects: this.lastFetchedCollects,
-      //  client: client_,
-    };
+      return {
+        products: this.lastFetchedProducts,
+        customCollections: this.lastFetchedCustomCollections,
+        smartCollections: this.lastFetchedSmartCollections,
+        collects: this.lastFetchedCollects,
+        //  client: client_,
+      };
+    }
   }
 
   async fetchFromShopifyAndProcessSingleCategory(
@@ -183,7 +185,7 @@ class ShopifyService extends TransactionBaseService {
     category: ShopifyPath = "products",
     userId?: string,
     gotPageCallBack?: ShopifyImportCallBack
-  ): Promise<FetchedShopifyData> {
+  ): Promise<ShopifyData> {
     const client_ = this.shopifyClientService_;
 
     const updatedSinceQuery = await this.getAndUpdateBuildTime_(
