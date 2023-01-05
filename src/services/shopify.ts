@@ -366,7 +366,7 @@ class ShopifyService extends TransactionBaseService {
     }
 
     return {
-      updated_at_min: buildtime,
+      updated_at_min: dateString,
     };
   }
   async handleError(e: Error): Promise<void> {
