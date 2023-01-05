@@ -351,8 +351,10 @@ class ShopifyService extends TransactionBaseService {
     let dateString = currentDate.toISOString();
     dateString =
       dateString.substring(0, dateString.length - 5) + getTimeZone(currentDate);
-    buildtime =
-      buildtime.substring(0, dateString.length - 5) + getTimeZone(currentDate);
+    buildtime = buildtime
+      ? buildtime?.substring(0, dateString.length - 5) +
+        getTimeZone(currentDate)
+      : undefined;
     const payload = {
       metadata: {
         source_shopify_bt: dateString,
