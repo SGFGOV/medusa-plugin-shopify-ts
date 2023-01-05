@@ -334,13 +334,32 @@ class ShopifyService extends TransactionBaseService {
       buildtime = store.metadata.source_shopify_bt;
     }
 
+    const getTimeZone = (currentDate: Date): string => {
+      const timezoneOffset = currentDate.getTimezoneOffset();
+      const offset = Math.abs(timezoneOffset);
+      const offsetOperator = timezoneOffset < 0 ? "+" : "-";
+      const offsetHours = Math.floor(offset / 60)
+        .toString()
+        .padStart(2, "0");
+      const offsetMinutes = Math.floor(offset % 60)
+        .toString()
+        .padStart(2, "0");
+
+      return `${offsetOperator}${offsetHours}:${offsetMinutes}`;
+    };
+    const currentDate = new Date();
+    let dateString = currentDate.toISOString();
+    dateString =
+      dateString.substring(0, dateString.length - 5) + getTimeZone(currentDate);
     const payload = {
       metadata: {
-        source_shopify_bt: new Date().toISOString(),
+        source_shopify_bt: dateString,
       },
     };
 
-    await this.storeService_.update(payload);
+    await this.atomicPhase_(async (manager) => {
+      return await this.storeService_.withTransaction(manager).update(payload);
+    });
 
     if (!buildtime) {
       return {};
