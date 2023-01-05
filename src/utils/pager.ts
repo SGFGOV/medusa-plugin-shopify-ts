@@ -59,7 +59,7 @@ export async function pager<ShopifyData>(
     } else {
       hasNext = false;
     }
-    if (gotPageCallBack) {
+    if (gotPageCallBack && currentPageResponse?.length > 0) {
       await gotPageCallBack(
         shopifyService,
         currentPageResponse,
