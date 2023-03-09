@@ -1,4 +1,4 @@
-import { EntityManager } from "typeorm";
+import { EntityManager, FindOptionsRelations } from "typeorm";
 import {
   EventBusService,
   ProductService as MedusaProductService,
@@ -11,7 +11,7 @@ import {
 } from "@medusajs/medusa/dist";
 import { FilterableProductProps as MedusaFilterableProductProps } from "@medusajs/medusa/dist/types/product";
 import { FindConfig, Selector } from "@medusajs/medusa/dist/types/common";
-import { FindWithoutRelationsOptions } from "@medusajs/medusa/dist/repositories/product";
+import { ProductRepository } from "@medusajs/medusa/dist/repositories/product";
 import { buildQuery } from "@medusajs/medusa/dist/utils";
 
 class FilterableProductPropsMultiStore extends MedusaFilterableProductProps {
@@ -67,7 +67,7 @@ export class MultiStoreProductService extends MedusaProductService {
 
     return product as Product;
   }*/
-
+  /*
   prepareListQuery_(
     selector: FilterableProductPropsMultiStore | Selector<Product>,
     config: FindProductConfig
@@ -98,6 +98,40 @@ export class MultiStoreProductService extends MedusaProductService {
     return {
       query: query as FindWithoutRelationsOptions,
       relations: rels as (keyof MedusaProduct)[],
+      q,
+    };
+  }*/
+
+  prepareListQuery_(
+    selector: FilterableProductPropsMultiStore | Selector<Product>,
+    config: FindConfig<Product>
+  ): {
+    q: string;
+    relations: FindOptionsRelations<Product>;
+    query: any;
+  } {
+    let q;
+    if ("q" in selector) {
+      q = selector.q;
+      delete selector.q;
+    }
+
+    const query = buildQuery(selector, config);
+
+    if (config.relations && config.relations.length > 0) {
+      query.relations = config.relations as any;
+    }
+
+    if (config.select && config.select.length > 0) {
+      query.select = config.select as any;
+    }
+
+    const relations = query.relations;
+    delete query.relations;
+
+    return {
+      query: query,
+      relations: relations,
       q,
     };
   }

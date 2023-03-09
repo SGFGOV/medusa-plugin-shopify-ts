@@ -96,8 +96,6 @@ export type UpdateVariantAction = {
 };
 
 class ShopifyProductService extends TransactionBaseService {
-  protected manager_: EntityManager;
-  protected transactionManager_: EntityManager;
   options: ClientOptions;
   productService_: MultiStoreProductService;
   productVariantService_: ProductVariantService;

@@ -28,8 +28,6 @@ export interface ShopifyCollectionServiceParams {
 }
 
 class ShopifyCollectionService extends TransactionBaseService {
-  protected manager_: EntityManager;
-  protected transactionManager_: EntityManager;
   options: ClientOptions;
   productService_: ShopifyProductService;
   collectionService_: ProductCollectionService;
@@ -143,15 +141,26 @@ class ShopifyCollectionService extends TransactionBaseService {
           return Promise.resolve();
         }
 
-        const productRepo = this.manager_.getCustomRepository(
-          this.productRepository_
-        );
+        const productRepo = this.productRepository_;
 
         const ids = products.map((p) => p.id);
-        const completeProducts = await productRepo.findWithRelations(
-          ["variants", "tags", "type"],
-          ids
-        );
+        const completeProducts: Product[] = [];
+        ids.map(async (id) => {
+          try {
+            const product = await productRepo.findOne({
+              relations: ["variants", "tags", "type"],
+              where: {
+                id: id,
+              },
+            });
+
+            if (product) {
+              completeProducts.push(product);
+            }
+          } catch (error) {
+            this.logger.log("no such product");
+          }
+        });
 
         const store = await this.getStoreByIdOrName(storeId);
         const defaultCurrency = store?.default_currency ?? "INR";
@@ -452,13 +461,17 @@ class ShopifyCollectionService extends TransactionBaseService {
     };
   }
   async getStoreByIdOrName(storeId: string): Promise<Store | undefined> {
-    const storeRepo = this.manager_.getCustomRepository(this.storeRepository_);
+    const storeRepo = this.storeRepository_;
     const availableStore =
       (await storeRepo.findOne({
-        id: storeId,
+        where: {
+          id: storeId,
+        },
       })) ??
       (await storeRepo.findOne({
-        name: storeId,
+        where: {
+          name: storeId,
+        },
       }));
 
     return availableStore;

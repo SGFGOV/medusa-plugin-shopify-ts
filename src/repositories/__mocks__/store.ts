@@ -46,8 +46,8 @@ export const StoreModelMock = {
     return Promise.resolve()
   }),
   findOne: jest.fn().mockImplementation(query => {
-    if(query.name){
-    const result = stores.get(query.name)
+    if(query.where.name){
+    const result = stores.get(query.where.name)
     if(!result)
     {
       

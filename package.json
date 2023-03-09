@@ -1,6 +1,6 @@
 {
   "name": "medusa-plugin-shopify-ts",
-  "version": "3.5.2",
+  "version": "4.0.0",
   "description": "A plugin to pull from shopify store",
   "main": "index.js",
   "types": "index.d.ts",
@@ -27,7 +27,7 @@
     "test": "jest"
   },
   "devDependencies": {
-    "@medusajs/medusa": "^1.x",
+    "@medusajs/medusa": "npm:@sgftech/medusa",
     "@types/express": "^4.17.13",
     "@types/jest": "^27.4.0",
     "@types/node": "^17.0.15",
@@ -57,7 +57,7 @@
     "yarn": "^1.22.19"
   },
   "peerDependencies": {
-    "@medusajs/medusa": "latest",
+    "@medusajs/medusa": "npm:@sgftech/medusa",
     "medusa-interfaces": "latest"
   },
   "dependencies": {
@@ -67,7 +67,10 @@
     "express": "^4.17.2",
     "medusa-core-utils": "^1.1.31",
     "medusa-test-utils": "^1.1.37",
-    "typeorm": "^0.2.41"
+    "typeorm": "^0.3.11"
+  },
+  "resolutions": {
+    "@medusajs/medusa":"npm:@sgftech/medusa"
   },
   "jest": {
     "globals": {

@@ -39,8 +39,6 @@ class ShopifyImportStrategy extends AbstractBatchJobStrategy {
   buildTemplate(): Promise<string> {
     throw new Error("Method not implemented.");
   }
-  protected manager_: EntityManager;
-  protected transactionManager_: EntityManager;
   protected batchJobService_: BatchJobService;
   protected shopifyService_: ShopifyService;
   static identifier = "shopify-import-strategy";

@@ -4,12 +4,10 @@ import { DataType } from "@shopify/shopify-api";
 import { RestClient } from "@shopify/shopify-api/dist/clients/rest";
 import {
   ClientOptions,
-  ShopifyData,
   ShopifyImportCallBack,
   ShopifyImportRequest,
 } from "interfaces/shopify-interfaces";
-import { BaseService } from "medusa-interfaces";
-import { EntityManager, Transaction } from "typeorm";
+import { EntityManager } from "typeorm";
 import { createClient } from "../utils/create-client";
 import { pager } from "../utils/pager";
 import ShopifyService from "./shopify";
@@ -21,11 +19,9 @@ export interface ShopifyClientServiceProps {
 }
 
 class ShopifyClientService extends TransactionBaseService {
-  protected transactionManager_: EntityManager;
   options: ClientOptions;
   defaultRestClient_: RestClient;
   protected eventbus_: EventBusService;
-  protected manager_: EntityManager;
   logger: Logger;
   // eslint-disable-next-line no-empty-pattern
   constructor(container: ShopifyClientServiceProps, options: ClientOptions) {

@@ -19,6 +19,12 @@ import { MockManager } from "medusa-test-utils";
 import { ConfigModule, Logger } from "@medusajs/medusa/dist/types/global";
 import ShopifyClientService from "../shopify-client";
 
+const TestManager = {
+  ...MockManager,
+  withRepository:(repo:Repository<any>):Repository<any>=>repo
+};
+
+
 import {
   ShippingProfileServiceMock,
   ShopifyProductServiceMock,
@@ -64,6 +70,9 @@ import { ProductTagModelMock } from "../../repositories/__mocks__/product-tag";
 import { ImageRepository } from "@medusajs/medusa/dist/repositories/image";
 import { ImageModelMock } from "../../repositories/__mocks__/image";
 import { sleep } from "@medusajs/medusa/dist/utils/sleep";
+import JobSchedulerService from "@medusajs/medusa/dist/services/job-scheduler";
+import { JobSchedulerServiceMock } from "../__mocks__/job-scheduler";
+import { Repository } from "typeorm";
 
 /** mocked values */
 export const mockedLogger: jest.Mocked<Logger> = LoggerMock as any;
@@ -77,7 +86,7 @@ export const mockedProductVariantService: jest.Mocked<ProductVariantService> =  
 export const mockedShopifyRedisService: jest.Mocked<ShopifyRedisService> =   ShopifyRedisServiceMock as any;
 export const mockedStoreRespoistory: jest.Mocked<typeof StoreRepository> =   StoreModelMock as any;
 export const mockedProductCollectionService: jest.Mocked<ProductCollectionService> =   ProductCollectionServiceMock as any;
-export const mockedProductRepository: jest.Mocked<ProductRepository> =   ProductModelMock as any;
+export const mockedProductRepository: jest.Mocked<typeof ProductRepository> =   ProductModelMock as any;
 export const mockedBatchRepository: jest.Mocked<typeof BatchJobRepository> =  BatchJobRepositoryMock as any;
 export const mockedStagedJobRepository: jest.Mocked<typeof StagedJobRepository> = StagedJobRepositoryMock as any;
 export const mockedProductOptionRepository: jest.Mocked<typeof ProductOptionRepository> =  ProductOptionRepositoryMock as any;
@@ -85,6 +94,7 @@ export const mockedProductVariantRepository: jest.Mocked<typeof ProductVariantRe
 export const mockedProductTypeRepository: jest.Mocked<typeof ProductTypeRepository> =  ProductTypeModelMock as any;
 export const mockedProductTagRepository: jest.Mocked<typeof ProductTagRepository> =  ProductTagModelMock as any;
 export const mockedImageRepository: jest.Mocked<typeof ImageRepository> =  ImageModelMock as any;
+export const mockedjobSchedulerService: jest.Mocked<JobSchedulerService> =  JobSchedulerServiceMock as any;
 
 
 
@@ -166,6 +176,9 @@ function makeMockValue(value:any):any{
 const mocks = {
   productRepository:asFunction(()=>mockedProductRepository).singleton(),
   productCollectionService: asFunction(()=>mockedProductCollectionService).singleton(),
+  jobSchedulerService: asFunction(()=>mockedjobSchedulerService).singleton(),
+    
+
   storeRepository: asFunction(()=>mockedStoreRespoistory).singleton(),
   logger: asFunction(()=>mockedLogger).singleton(),
   shippingProfileService: asFunction(()=>mockedShippingProfileService).singleton(),
@@ -177,7 +190,7 @@ const mocks = {
   // eventBusService:mockedEventBusService).singleton(),
   redisClient:asFunction(()=>mockedRedis).singleton(),
   redisSubscriber:asFunction(()=>mockedRedis).singleton(),
-  manager: asFunction(()=>MockManager).singleton(),
+  manager: asFunction(()=>TestManager).singleton(),
   productService: asFunction(()=>mockedProductService).singleton(),
   productVariantService: asFunction(()=>mockedProductVariantService).singleton(),
   shopifyRedisService: asFunction(()=>mockedShopifyRedisService).singleton(),
@@ -430,8 +443,12 @@ export async function  singleStepBatchJob (
   await eventBusService.worker_({
     data: {
       eventName: "batch.confirmed",
-      data: job as unknown,
+      data: job as any,
+      completedSubscriberIds: undefined
     },
+    update:  (data: any)=>jest.fn().mockImplementation(()=>Promise.resolve()),
+    attemptsMade: 0,
+    opts: undefined
   });
 
   //

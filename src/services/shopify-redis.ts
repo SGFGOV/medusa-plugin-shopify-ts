@@ -12,8 +12,6 @@ export interface ShopifyRedisServiceContainerProps {
 }
 
 class ShopifyRedisService extends TransactionBaseService {
-  protected manager_: EntityManager;
-  protected transactionManager_: EntityManager;
   options_: any;
   redis_: any;
   logger: Logger;
