@@ -317,7 +317,7 @@ class ShopifyService extends TransactionBaseService {
   }
 
   async getStoreByName(store_name: string): Promise<Store | undefined> {
-    const storeRepo = this.manager_.getCustomRepository(StoreRepository);
+    const storeRepo = this.manager_.getRepository(Store);
     const availableStore = await storeRepo.findOne({
       where: {
         name: store_name,
