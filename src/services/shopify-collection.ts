@@ -452,13 +452,17 @@ class ShopifyCollectionService extends TransactionBaseService {
     };
   }
   async getStoreByIdOrName(storeId: string): Promise<Store | undefined> {
-    const storeRepo = this.manager_.getCustomRepository(this.storeRepository_);
+    const storeRepo = this.manager_.getCustomRepository(StoreRepository);
     const availableStore =
       (await storeRepo.findOne({
-        id: storeId,
+        where: {
+          id: storeId,
+        },
       })) ??
       (await storeRepo.findOne({
-        name: storeId,
+        where: {
+          name: storeId,
+        },
       }));
 
     return availableStore;

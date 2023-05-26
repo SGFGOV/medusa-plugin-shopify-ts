@@ -147,7 +147,7 @@ class ShopifyService extends TransactionBaseService {
         userId,
         gotPageCallBack
       );
-    if (this.lastFetchedProducts?.length > 0) {
+    if (this.lastFetchedProducts?.length) {
       this.lastFetchedCollects =
         await this.fetchFromShopifyAndProcessSingleCategory(
           shopifyRequest,
@@ -306,18 +306,22 @@ class ShopifyService extends TransactionBaseService {
   }
 
   async getStoreById(store_id: string): Promise<Store | undefined> {
-    const storeRepo = this.manager_.getCustomRepository(this.storeRepository);
+    const storeRepo = this.manager_.getRepository(Store);
     const availableStore = await storeRepo.findOne({
-      id: store_id,
+      where: {
+        id: store_id,
+      },
     });
 
     return availableStore;
   }
 
   async getStoreByName(store_name: string): Promise<Store | undefined> {
-    const storeRepo = this.manager_.getCustomRepository(this.storeRepository);
+    const storeRepo = this.manager_.getCustomRepository(StoreRepository);
     const availableStore = await storeRepo.findOne({
-      name: store_name,
+      where: {
+        name: store_name,
+      },
     });
 
     return availableStore;

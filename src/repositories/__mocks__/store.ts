@@ -46,19 +46,19 @@ export const StoreModelMock = {
     return Promise.resolve()
   }),
   findOne: jest.fn().mockImplementation(query => {
-    if(query.name){
-    const result = stores.get(query.name)
+    if(query.where.name){
+    const result = stores.get(query.where.name)
     if(!result)
     {
       
     }
     return Promise.resolve(result)
     }
-    if(query.id)
+    if(query.where.id)
     { let result:StoreMock;
       stores.forEach((value)=>
       {
-        if(value.id == query.id){
+        if(value.id == query.where.id){
         result = value;
         }
       })

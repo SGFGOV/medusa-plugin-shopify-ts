@@ -53,12 +53,15 @@
     "ts-jest": "^29.0.3",
     "ts-loader": "^9.2.6",
     "ts-node": "^10.9.1",
+    "typeorm": "^0.3.16",
     "typescript": "^4.5.5",
     "yarn": "^1.22.19"
   },
   "peerDependencies": {
     "@medusajs/medusa": "latest",
-    "medusa-interfaces": "latest"
+    "medusa-interfaces": "latest",
+    "typeorm": "^0.3.16"
+
   },
   "dependencies": {
     "@shopify/shopify-api": "^5.2.0",
@@ -66,8 +69,7 @@
     "cors": "^2.8.5",
     "express": "^4.17.2",
     "medusa-core-utils": "^1.1.31",
-    "medusa-test-utils": "^1.1.37",
-    "typeorm": "^0.2.41"
+    "medusa-test-utils": "^1.1.37"
   },
   "jest": {
     "globals": {
