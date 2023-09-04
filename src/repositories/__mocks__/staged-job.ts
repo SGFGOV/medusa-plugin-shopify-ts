@@ -1,8 +1,5 @@
 import { BatchJob as StagedJob } from "@medusajs/medusa"
 import { randomInt } from "crypto"
-import { string } from "joi"
-import { IdMap } from "medusa-test-utils"
-import { JoinTableMetadataArgs } from "typeorm/metadata-args/JoinTableMetadataArgs"
 
 
 const eventMap = new Map<string,StagedJob>()

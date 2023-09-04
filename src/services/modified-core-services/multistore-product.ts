@@ -89,7 +89,7 @@ export class MultiStoreProductService extends MedusaProductService {
     }
 
     if (config.select && config.select.length > 0) {
-      query.select = config.select;
+      query.select = config.select as any;
     }
 
     const rels = query.relations;

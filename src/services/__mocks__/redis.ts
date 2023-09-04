@@ -52,7 +52,7 @@ export type HandlerFunction = {
 const eventMap = new Map<string, HandlerFunction>();
 RedisMock.client = mockedCommandFunctions;
 RedisMock["addJob"] = (c: []): Job => {
-  return c;
+  return c as unknown as Job;
 };
 // eslint-disable-next-line @typescript-eslint/no-empty-function
 RedisMock["defineCommand"] = (cmd: any, string: any): void => {};

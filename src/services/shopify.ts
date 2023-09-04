@@ -52,8 +52,6 @@ export type ShopifyBatchTask = {
 export type BatchActionCallBack = (BatchJob) => Promise<any>;
 
 class ShopifyService extends TransactionBaseService {
-  protected manager_: EntityManager;
-  protected transactionManager_: EntityManager;
   storeRepository: typeof StoreRepository;
   options: ClientOptions;
   shippingProfileService_: ShippingProfileService;
@@ -147,7 +145,7 @@ class ShopifyService extends TransactionBaseService {
         userId,
         gotPageCallBack
       );
-    if (this.lastFetchedProducts?.length > 0) {
+    if ((this.lastFetchedProducts?.length as any) > 0) {
       this.lastFetchedCollects =
         await this.fetchFromShopifyAndProcessSingleCategory(
           shopifyRequest,
@@ -306,18 +304,22 @@ class ShopifyService extends TransactionBaseService {
   }
 
   async getStoreById(store_id: string): Promise<Store | undefined> {
-    const storeRepo = this.manager_.getCustomRepository(this.storeRepository);
+    const storeRepo = this.manager_.getRepository(Store);
     const availableStore = await storeRepo.findOne({
-      id: store_id,
+      where: {
+        id: store_id,
+      },
     });
 
     return availableStore;
   }
 
   async getStoreByName(store_name: string): Promise<Store | undefined> {
-    const storeRepo = this.manager_.getCustomRepository(this.storeRepository);
+    const storeRepo = this.manager_.getRepository(Store);
     const availableStore = await storeRepo.findOne({
-      name: store_name,
+      where: {
+        name: store_name,
+      },
     });
 
     return availableStore;

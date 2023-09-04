@@ -21,11 +21,9 @@ export interface ShopifyClientServiceProps {
 }
 
 class ShopifyClientService extends TransactionBaseService {
-  protected transactionManager_: EntityManager;
   options: ClientOptions;
   defaultRestClient_: RestClient;
   protected eventbus_: EventBusService;
-  protected manager_: EntityManager;
   logger: Logger;
   // eslint-disable-next-line no-empty-pattern
   constructor(container: ShopifyClientServiceProps, options: ClientOptions) {

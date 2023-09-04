@@ -77,7 +77,7 @@ export const mockedProductVariantService: jest.Mocked<ProductVariantService> =  
 export const mockedShopifyRedisService: jest.Mocked<ShopifyRedisService> =   ShopifyRedisServiceMock as any;
 export const mockedStoreRespoistory: jest.Mocked<typeof StoreRepository> =   StoreModelMock as any;
 export const mockedProductCollectionService: jest.Mocked<ProductCollectionService> =   ProductCollectionServiceMock as any;
-export const mockedProductRepository: jest.Mocked<ProductRepository> =   ProductModelMock as any;
+export const mockedProductRepository: jest.Mocked<typeof ProductRepository> =   ProductModelMock as any;
 export const mockedBatchRepository: jest.Mocked<typeof BatchJobRepository> =  BatchJobRepositoryMock as any;
 export const mockedStagedJobRepository: jest.Mocked<typeof StagedJobRepository> = StagedJobRepositoryMock as any;
 export const mockedProductOptionRepository: jest.Mocked<typeof ProductOptionRepository> =  ProductOptionRepositoryMock as any;
@@ -427,12 +427,12 @@ export async function  singleStepBatchJob (
   const batchJobService = container.resolve(
     "batchJobService"
   ) as BatchJobService;
-  await eventBusService.worker_({
-    data: {
+  await eventBusService.emit([{
+    
       eventName: "batch.confirmed",
       data: job as unknown,
-    },
-  });
+    }]
+  );
 
   //
   const waitForBatchStatusChange = async (

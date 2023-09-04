@@ -28,8 +28,6 @@ export interface ShopifyCollectionServiceParams {
 }
 
 class ShopifyCollectionService extends TransactionBaseService {
-  protected manager_: EntityManager;
-  protected transactionManager_: EntityManager;
   options: ClientOptions;
   productService_: ShopifyProductService;
   collectionService_: ProductCollectionService;
@@ -143,15 +141,15 @@ class ShopifyCollectionService extends TransactionBaseService {
           return Promise.resolve();
         }
 
-        const productRepo = this.manager_.getCustomRepository(
-          this.productRepository_
-        );
+        const productRepo = this.manager_.getRepository(Product);
 
         const ids = products.map((p) => p.id);
-        const completeProducts = await productRepo.findWithRelations(
-          ["variants", "tags", "type"],
-          ids
-        );
+        const completeProducts = await productRepo.find({
+          where: {
+            id: ids,
+          },
+          relations: ["variants", "tags", "type"],
+        });
 
         const store = await this.getStoreByIdOrName(storeId);
         const defaultCurrency = store?.default_currency ?? "INR";
@@ -452,13 +450,17 @@ class ShopifyCollectionService extends TransactionBaseService {
     };
   }
   async getStoreByIdOrName(storeId: string): Promise<Store | undefined> {
-    const storeRepo = this.manager_.getCustomRepository(this.storeRepository_);
+    const storeRepo = this.manager_.getRepository(Store);
     const availableStore =
       (await storeRepo.findOne({
-        id: storeId,
+        where: {
+          id: storeId,
+        },
       })) ??
       (await storeRepo.findOne({
-        name: storeId,
+        where: {
+          name: storeId,
+        },
       }));
 
     return availableStore;
