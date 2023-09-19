@@ -211,22 +211,25 @@ class ShopifyProductService extends TransactionBaseService {
               store_id: store_id,
             }
           : normalizedProduct;
-        const product = await manager.transaction(async (manager) => {
-          const product = await this.productService_
+        let productUnderProcess = await manager.transaction(async (manager) => {
+          const savedProduct = await this.productService_
             .withTransaction(manager)
             .create(productToSave as CreateProductInput);
-          return product;
+          return savedProduct;
         });
         if (variants) {
+          productUnderProcess = await this.productService_
+            .withTransaction(manager)
+            .retrieve(productUnderProcess.id, { relations: ["options"] });
           variants = variants.map((v) =>
-            this.addVariantOptions_(v, product.options)
+            this.addVariantOptions_(v, productUnderProcess.options)
           );
           this.logger.info("adding variants in medusa product: " + data.handle);
           for (let variant of variants) {
             variant = await this.ensureVariantUnique_(variant);
             await this.productVariantService_
               .withTransaction(manager)
-              .create(product.id, variant);
+              .create(productUnderProcess.id, variant);
           }
         }
 
@@ -236,12 +239,12 @@ class ShopifyProductService extends TransactionBaseService {
           await this.eventBusService
             .withTransaction(manager)
             .emit("shopify.data.metafields.found", {
-              product_id: product.id,
+              product_id: productUnderProcess.id,
               metafields,
             });
         }
 
-        return product;
+        return productUnderProcess;
       },
       this.handleError,
       this.handleWarn
@@ -567,7 +570,7 @@ class ShopifyProductService extends TransactionBaseService {
         const result = await this.productService_
           .withTransaction(manager)
           .retrieve(id, {
-            relations: ["variants", "options"],
+            relations: ["variants", "options", "variants.options"],
           });
 
         return result;
