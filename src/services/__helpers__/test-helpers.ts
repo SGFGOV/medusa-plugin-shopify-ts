@@ -64,6 +64,8 @@ import { ProductTagModelMock } from "../../repositories/__mocks__/product-tag";
 import { ImageRepository } from "@medusajs/medusa/dist/repositories/image";
 import { ImageModelMock } from "../../repositories/__mocks__/image";
 import { sleep } from "@medusajs/medusa/dist/utils/sleep";
+import  EventBusModuleService from "@medusajs/event-bus-local/dist/services/event-bus-local";
+
 
 /** mocked values */
 export const mockedLogger: jest.Mocked<Logger> = LoggerMock as any;
@@ -85,6 +87,7 @@ export const mockedProductVariantRepository: jest.Mocked<typeof ProductVariantRe
 export const mockedProductTypeRepository: jest.Mocked<typeof ProductTypeRepository> =  ProductTypeModelMock as any;
 export const mockedProductTagRepository: jest.Mocked<typeof ProductTagRepository> =  ProductTagModelMock as any;
 export const mockedImageRepository: jest.Mocked<typeof ImageRepository> =  ImageModelMock as any;
+
 
 
 
@@ -188,7 +191,8 @@ const mocks = {
   productVariantRepository:asFunction(()=>mockedProductVariantRepository).singleton(),
   productTypeRepository:asFunction(()=>mockedProductTypeRepository).singleton(),
   productTagRepository:asFunction(()=>mockedProductTagRepository).singleton(),
-  imageRepository:asFunction(()=>mockedImageRepository).singleton()
+  imageRepository:asFunction(()=>mockedImageRepository).singleton(),
+  stagedJobService:asFunction(()=>mockedStagedJobRepository).singleton(),
 };
 
 
@@ -261,18 +265,22 @@ export function configurContainer(): AwilixContainer {
   StrategyResolverService,
   EventBusService,
   BatchJobService,
+  EventBusModuleService
   // ProductService,
 ];
 
 
  testContainer = registerActuals(testContainer,actualServices as any,"Service");
  testContainer.register("config",asFunction(()=>mockedConfigFile).singleton());
+ testContainer.register("eventBusModuleService",asFunction(()=>EventBusModuleService).singleton());
 
  
 
 
  testContainer.resolve("mocks");
+ testContainer.resolve("eventBusModuleService");
  testContainer.resolve("eventBusService");
+ 
 
 
 
