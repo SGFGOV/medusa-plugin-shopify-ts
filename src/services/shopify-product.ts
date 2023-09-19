@@ -537,7 +537,7 @@ class ShopifyProductService extends TransactionBaseService {
   }
 
   addVariantOptions_(variant, productOptions): Promise<any> {
-    const options = productOptions.map((o, i) => ({
+    const options = productOptions?.map((o, i) => ({
       option_id: o.id,
       ...variant.options[i],
     }));
