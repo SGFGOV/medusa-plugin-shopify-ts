@@ -38,5 +38,13 @@ export const StagedJobRepositoryMock = {
     
      return ;
   }),
+
+  insertBulk:jest.fn().mockImplementation((data)=>{
+    return Promise.resolve(data.map(d=>{
+      const data = d
+    const job = Object.assign(new StagedJob(),data) as StagedJob
+    eventMap.set(job.id,job)
+    return Promise.resolve(eventMap.get(job.id))
+  }))})
   
 }

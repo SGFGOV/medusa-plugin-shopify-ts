@@ -14,6 +14,7 @@ import {
   StoreService,
   StrategyResolverService,
   UserService,
+  StagedJobService
 } from "@medusajs/medusa";
 import { MockManager } from "medusa-test-utils";
 import { ConfigModule, Logger } from "@medusajs/medusa/dist/types/global";
@@ -192,7 +193,7 @@ const mocks = {
   productTypeRepository:asFunction(()=>mockedProductTypeRepository).singleton(),
   productTagRepository:asFunction(()=>mockedProductTagRepository).singleton(),
   imageRepository:asFunction(()=>mockedImageRepository).singleton(),
-  stagedJobService:asFunction(()=>mockedStagedJobRepository).singleton(),
+  //stagedJobService:asFunction(()=>mockedStagedJobRepository).singleton(),
 };
 
 
@@ -265,7 +266,8 @@ export function configurContainer(): AwilixContainer {
   StrategyResolverService,
   EventBusService,
   BatchJobService,
-  EventBusModuleService
+  EventBusModuleService,
+  StagedJobService
   // ProductService,
 ];
 
