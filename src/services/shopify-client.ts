@@ -14,7 +14,7 @@ import { EntityManager, Transaction } from "typeorm";
 import { createClient } from "../utils/create-client";
 import { pager } from "../utils/pager";
 import ShopifyService from "./shopify";
-import { DURATION_BETWEEN_CALLS } from "utils/const";
+import { DURATION_BETWEEN_CALLS } from "../utils/const";
 
 export interface ShopifyClientServiceProps {
   manager: EntityManager;
