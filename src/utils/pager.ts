@@ -6,6 +6,7 @@ import {
 } from "interfaces/shopify-interfaces";
 import { RestClient } from "@shopify/shopify-api/dist/clients/rest";
 import ShopifyService from "services/shopify";
+import { DURATION_BETWEEN_CALLS } from "./const";
 
 export async function pager<ShopifyData>(
   shopifyService: ShopifyService,
@@ -43,7 +44,7 @@ export async function pager<ShopifyData>(
 
     const response = await client.get(params);
     /** limiting throttling */
-    await sleep(600);
+    await sleep(DURATION_BETWEEN_CALLS);
 
     const currentPageResponse = response.body[path];
 
