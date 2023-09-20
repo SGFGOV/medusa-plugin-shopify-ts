@@ -2,6 +2,7 @@ import { EventBusService, TransactionBaseService } from "@medusajs/medusa";
 import { Logger } from "@medusajs/medusa/dist/types/global";
 import { DataType } from "@shopify/shopify-api";
 import { RestClient } from "@shopify/shopify-api/dist/clients/rest";
+import { sleep } from "@medusajs/medusa/dist/utils/sleep";
 import {
   ClientOptions,
   ShopifyData,
@@ -13,6 +14,7 @@ import { EntityManager, Transaction } from "typeorm";
 import { createClient } from "../utils/create-client";
 import { pager } from "../utils/pager";
 import ShopifyService from "./shopify";
+import { DURATION_BETWEEN_CALLS } from "utils/const";
 
 export interface ShopifyClientServiceProps {
   manager: EntityManager;
@@ -59,7 +61,8 @@ class ShopifyClientService extends TransactionBaseService {
     return options.defaultClient ?? createClient(options);
   }
 
-  get(params: any, client = this.defaultRestClient_): any {
+  async get(params: any, client = this.defaultRestClient_): Promise<any> {
+    await sleep(DURATION_BETWEEN_CALLS);
     return client.get(params);
   }
 
@@ -86,14 +89,16 @@ class ShopifyClientService extends TransactionBaseService {
     );
   }
 
-  delete(params: any, client = this.defaultRestClient_): any {
+  async delete(params: any, client = this.defaultRestClient_): Promise<any> {
+    await sleep(DURATION_BETWEEN_CALLS);
     return client.delete(params);
   }
 
-  post(
+  async post(
     params: { path: any; body: any; type?: DataType },
     client = this.defaultRestClient_
-  ): any {
+  ): Promise<any> {
+    await sleep(DURATION_BETWEEN_CALLS);
     return client.post({
       path: params.path,
       data: params.body,
@@ -101,7 +106,8 @@ class ShopifyClientService extends TransactionBaseService {
     });
   }
 
-  put(params: any, client = this.defaultRestClient_): any {
+  async put(params: any, client = this.defaultRestClient_): Promise<any> {
+    await sleep(DURATION_BETWEEN_CALLS);
     return client.post(params);
   }
 
