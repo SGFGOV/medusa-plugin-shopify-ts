@@ -184,12 +184,14 @@ class ShopifyProductService extends TransactionBaseService {
               store_id
             );
 
-          if (existingProduct) {
+          if (existingProduct && this.options.overwrite_on_import) {
             this.logger.info("updating product: " + data.handle);
             return await this.withTransaction(manager).update(
               existingProduct,
               data
             );
+          } else {
+            return existingProduct;
           }
         } catch (e) {
           this.logger.info("unable to verify if the product exists");

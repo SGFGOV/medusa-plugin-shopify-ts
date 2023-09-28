@@ -10,6 +10,7 @@ export interface NewClientOptions {
   auto_create_store?: boolean /** automatically creates vendor stores if the stores don't exist */;
   defaultClient?: RestClient;
   medusa_store_admin_email?: string;
+  overwrite_on_import?: boolean;
 }
 
 export type ClientOptions =
@@ -21,6 +22,7 @@ export type ClientOptions =
       default_store_name?: string;
       enable_vendor_store?: boolean;
       auto_create_store?: string;
+      overwrite_on_import?: boolean;
     };
 
 export interface ShopifyFetchRequest {
