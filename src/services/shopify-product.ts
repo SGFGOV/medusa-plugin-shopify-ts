@@ -24,6 +24,7 @@ import { parsePrice } from "../utils/parse-price";
 import { MultiStoreProductService } from "./modified-core-services/multistore-product";
 import ShopifyClientService from "./shopify-client";
 import ShopifyRedisService from "./shopify-redis";
+import { AwilixContainer } from "awilix";
 
 export interface ShopifyProductServiceParams {
   manager: EntityManager;
@@ -104,9 +105,10 @@ class ShopifyProductService extends TransactionBaseService {
   redis_: ShopifyRedisService;
   logger: Logger;
   eventBusService: EventBusService;
+  container: AwilixContainer;
   constructor(container: ShopifyProductServiceParams, options) {
     super(container);
-
+    this.container = container as unknown as AwilixContainer;
     this.options = options;
 
     /** @private @const {EntityManager} */
@@ -167,14 +169,10 @@ class ShopifyProductService extends TransactionBaseService {
           return;
         }
         this.logger.info("creating product: " + data.handle);
-
-        const metafields = await this.shopify_.get({
-          path: `products/${data.id}/metafields.json`,
-        });
-        data["metafields"] = metafields;
-
+        let existingProduct: Product;
+        let metafields;
         try {
-          const existingProduct = await this.productService_
+          existingProduct = await this.productService_
             .withTransaction(manager)
             .retrieveByExternalId(
               data.id,
@@ -185,13 +183,22 @@ class ShopifyProductService extends TransactionBaseService {
             );
 
           if (existingProduct && this.options.overwrite_on_import) {
+            metafields = await this.shopify_.get({
+              path: `products/${data.id}/metafields.json`,
+            });
+            data["metafields"] = metafields;
             this.logger.info("updating product: " + data.handle);
             return await this.withTransaction(manager).update(
               existingProduct,
               data
             );
-          } else {
+          } else if (existingProduct) {
             return existingProduct;
+          } else {
+            metafields = await this.shopify_.get({
+              path: `products/${data.id}/metafields.json`,
+            });
+            data["metafields"] = metafields;
           }
         } catch (e) {
           this.logger.info("unable to verify if the product exists");
@@ -219,7 +226,10 @@ class ShopifyProductService extends TransactionBaseService {
             .create(productToSave as CreateProductInput);
           return savedProduct;
         });
-        if (variants) {
+        if (
+          variants &&
+          (!existingProduct || this.options.overwrite_on_import)
+        ) {
           productUnderProcess = await this.productService_
             .withTransaction(manager)
             .retrieve(productUnderProcess.id, { relations: ["options"] });
@@ -237,7 +247,17 @@ class ShopifyProductService extends TransactionBaseService {
 
         await this.redis_.addIgnore(data.id, "product.created");
 
-        if (metafields) {
+        if (
+          metafields &&
+          (!existingProduct || this.options.overwrite_on_import)
+        ) {
+          if (this.options.handleMetafields) {
+            await this.options.handleMetafields(
+              this.container,
+              metafields,
+              productUnderProcess
+            );
+          }
           await this.eventBusService
             .withTransaction(manager)
             .emit("shopify.data.metafields.found", {

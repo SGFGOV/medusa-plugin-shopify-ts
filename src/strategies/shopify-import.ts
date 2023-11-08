@@ -344,10 +344,6 @@ class ShopifyImportStrategy extends AbstractBatchJobStrategy {
         productInputListCount++
       ) {
         const product = products[productInputListCount];
-        this.logger.info(
-          `creating product  ${productInputListCount}` +
-            `/${products.length} ${products[productInputListCount].handle}`
-        );
         if (
           shopifyImportRequest.shopify_product_ids &&
           shopifyImportRequest.shopify_product_ids.indexOf("" + product.id) < 0
@@ -356,23 +352,43 @@ class ShopifyImportStrategy extends AbstractBatchJobStrategy {
             `${product.id} not found in product id's retrieved from shopify`
           );
           continue;
-        }
-        const store_id = await this.fetchStore(product.vendor);
-
-        const result = await this.shopifyService_.shopifyProductService_
-          .withTransaction(transactionManager)
-          .create(product, store_id);
-        if (result) {
-          productCreateCount++;
-        }
-        if (this.resolvedProducts) {
-          this.resolvedProducts.push(result);
         } else {
-          this.resolvedProducts = [result];
+          const result = await this.productProcessor(
+            products,
+            productInputListCount
+          );
+          if (result) {
+            productCreateCount++;
+          }
+          if (this.resolvedProducts) {
+            this.resolvedProducts.push(result);
+          } else {
+            this.resolvedProducts = [result];
+          }
         }
       }
       return this.resolvedProducts;
     });
+  }
+
+  async productProcessor(
+    products: ShopifyProducts,
+    productInputListCount: number
+  ): Promise<Product> {
+    const product = products[productInputListCount];
+    this.logger.info(
+      `creating product  ${productInputListCount}` +
+        `/${products.length} ${products[productInputListCount].handle}`
+    );
+
+    const store_id = await this.fetchStore(product.vendor);
+
+    const result = await this.atomicPhase_(async (transactionManager) => {
+      return await this.shopifyService_.shopifyProductService_
+        .withTransaction(transactionManager)
+        .create(product, store_id);
+    });
+    return result;
   }
 
   async preProcessBatchJob(batchJobId: string): Promise<void> {

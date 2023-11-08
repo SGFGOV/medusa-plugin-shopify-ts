@@ -1,5 +1,6 @@
 import { BatchJob, Product, User } from "@medusajs/medusa";
 import { RestClient } from "@shopify/shopify-api/dist/clients/rest";
+import { AwilixContainer } from "awilix";
 import ShopifyService from "services/shopify";
 
 export interface NewClientOptions {
@@ -11,6 +12,11 @@ export interface NewClientOptions {
   defaultClient?: RestClient;
   medusa_store_admin_email?: string;
   overwrite_on_import?: boolean;
+  handleMetafields?: (
+    container: AwilixContainer,
+    product: Product,
+    metafields: Record<string, any>
+  ) => Promise<void>;
 }
 
 export type ClientOptions =
@@ -23,6 +29,11 @@ export type ClientOptions =
       enable_vendor_store?: boolean;
       auto_create_store?: string;
       overwrite_on_import?: boolean;
+      handleMetafields?: (
+        container: AwilixContainer,
+        product: Product,
+        metafields: Record<string, any>
+      ) => Promise<void>;
     };
 
 export interface ShopifyFetchRequest {
