@@ -10,11 +10,11 @@ import {
 import { ProductRepository } from "@medusajs/medusa/dist/repositories/product";
 import { StoreRepository } from "@medusajs/medusa/dist/repositories/store";
 import { Logger } from "@medusajs/medusa/dist/types/global";
-import { ClientOptions, ShopifyProducts } from "interfaces/shopify-interfaces";
-import { BaseService } from "medusa-interfaces";
-import { EntityManager, ObjectType } from "typeorm";
+import { ClientOptions } from "interfaces/shopify-interfaces";
+import { EntityManager } from "typeorm";
 import { removeIndex } from "../utils/remove-index";
 import ShopifyProductService from "./shopify-product";
+import { Lifetime } from "awilix";
 
 export interface ShopifyCollectionServiceParams {
   manager: EntityManager;
@@ -28,6 +28,7 @@ export interface ShopifyCollectionServiceParams {
 }
 
 class ShopifyCollectionService extends TransactionBaseService {
+  static LIFE_TIME = Lifetime.TRANSIENT;
   options: ClientOptions;
   productService_: ShopifyProductService;
   collectionService_: ProductCollectionService;

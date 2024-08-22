@@ -49,7 +49,7 @@ class BatchJobEventSubscriber {
             );
           }
           try {
-            await this.logBatchSummary();
+            await this.logBatchSummary(ShopifyImportStrategy.batchType);
           } catch (e) {
             this.logger.error(
               "error generating shopify batch summary " + (e as Error).message
@@ -71,13 +71,14 @@ class BatchJobEventSubscriber {
     );
   }
 
-  async logBatchSummary(): Promise<void> {
+  async logBatchSummary(batchType?: string): Promise<void> {
     const jobs = await this.batchJobService.listAndCount(
       {
-        type: [ShopifyImportStrategy.batchType],
+        type: batchType ? [batchType] : undefined,
       },
       {
-        take: 1e9,
+        order: { created_at: "DESC" },
+        take: 100,
       }
     );
 
@@ -107,7 +108,8 @@ class BatchJobEventSubscriber {
       return job.status == BatchJobStatus.CONFIRMED;
     });
 
-    this.logger.info(`Shopfy Jobs Summary: Total Jobs: ${jobCount}
+    this.logger.info(`
+    Summary of last 100 batch Jobs Summary: Total Jobs of type ${batchType}: ${jobCount}
     created: ${createdJobs?.length ?? 0}
     confirmed: ${confirmedJobs?.length ?? 0}
     processing: ${processingJobs?.length ?? 0}

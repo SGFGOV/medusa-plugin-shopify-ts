@@ -1,7 +1,6 @@
 // shopify-redis
 import { TransactionBaseService } from "@medusajs/medusa";
 import { Logger } from "@medusajs/medusa/dist/types/global";
-import { BaseService } from "medusa-interfaces";
 import { EntityManager } from "typeorm";
 import { IGNORE_THRESHOLD } from "../utils/const";
 

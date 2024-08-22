@@ -7,8 +7,8 @@ import {
 } from "@medusajs/medusa";
 import { Logger } from "@medusajs/medusa/dist/types/global";
 import { MockManager } from "medusa-test-utils";
-import ShopifyClientService from "services/shopify-client";
-import ShopifyRedisService from "services/shopify-redis";
+import ShopifyClientService from "../shopify-client";
+import ShopifyRedisService from "../shopify-redis";
 
 import ShopifyProductService from "../shopify-product";
 import { ProductServiceMock } from "../__mocks__/product-service";
@@ -18,7 +18,7 @@ import { ShopifyClientServiceMock } from "../__mocks__/shopify-client";
 import { ShopifyRedisServiceMock } from "../__mocks__/shopify-redis";
 import { medusaProducts, shopifyProducts } from "../__mocks__/test-products";
 import LoggerMock from "../__mocks__/logger";
-import { MultiStoreProductService } from "services/modified-core-services/multistore-product";
+import { MultiStoreProductService } from "../modified-core-services/multistore-product";
 import { EventBusServiceMock } from "../__mocks__";
 
 const mockedLogger: jest.Mocked<Logger> = LoggerMock as any;
@@ -41,7 +41,7 @@ describe("ShopifyProductService", () => {
   describe("normalizeProduct_", () => {
     const shopifyProductService = new ShopifyProductService(
       {
-        manager: MockManager,
+        manager: MockManager as any,
         shopifyClientService: mockedShopifyClientService,
         productService: mockedProductService,
         productVariantService: mockedProductVariantService,
@@ -71,7 +71,7 @@ describe("ShopifyProductService", () => {
   describe("create", () => {
     const shopifyProductService = new ShopifyProductService(
       {
-        manager: MockManager,
+        manager: MockManager as any,
         shopifyClientService: mockedShopifyClientService,
         productService: mockedProductService,
         productVariantService: mockedProductVariantService,
@@ -110,7 +110,7 @@ describe("ShopifyProductService", () => {
   describe("update", () => {
     const shopifyProductService = new ShopifyProductService(
       {
-        manager: MockManager,
+        manager: MockManager as any,
         shopifyClientService: mockedShopifyClientService,
         productService: mockedProductService,
         productVariantService: mockedProductVariantService,

@@ -24,7 +24,7 @@ import { parsePrice } from "../utils/parse-price";
 import { MultiStoreProductService } from "./modified-core-services/multistore-product";
 import ShopifyClientService from "./shopify-client";
 import ShopifyRedisService from "./shopify-redis";
-import { AwilixContainer } from "awilix";
+import { AwilixContainer, Lifetime } from "awilix";
 
 export interface ShopifyProductServiceParams {
   manager: EntityManager;
@@ -97,6 +97,7 @@ export type UpdateVariantAction = {
 };
 
 class ShopifyProductService extends TransactionBaseService {
+  static LIFE_TIME = Lifetime.TRANSIENT;
   options: ClientOptions;
   productService_: MultiStoreProductService;
   productVariantService_: ProductVariantService;

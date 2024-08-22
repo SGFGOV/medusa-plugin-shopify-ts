@@ -5,16 +5,15 @@ import { RestClient } from "@shopify/shopify-api/dist/clients/rest";
 import { sleep } from "@medusajs/medusa/dist/utils/sleep";
 import {
   ClientOptions,
-  ShopifyData,
   ShopifyImportCallBack,
   ShopifyImportRequest,
 } from "interfaces/shopify-interfaces";
-import { BaseService } from "medusa-interfaces";
-import { EntityManager, Transaction } from "typeorm";
+import { EntityManager } from "typeorm";
 import { createClient } from "../utils/create-client";
 import { pager } from "../utils/pager";
 import ShopifyService from "./shopify";
 import { DURATION_BETWEEN_CALLS } from "../utils/const";
+import { Lifetime } from "awilix";
 
 export interface ShopifyClientServiceProps {
   manager: EntityManager;
@@ -23,6 +22,7 @@ export interface ShopifyClientServiceProps {
 }
 
 class ShopifyClientService extends TransactionBaseService {
+  static LIFE_TIME = Lifetime.TRANSIENT;
   options: ClientOptions;
   defaultRestClient_: RestClient;
   protected eventbus_: EventBusService;
@@ -49,7 +49,7 @@ class ShopifyClientService extends TransactionBaseService {
     const clone = new ShopifyClientService(
       {
         eventBusService: this.eventbus_,
-        manager: this.manager_,
+        manager: this.manager_ as any,
         logger: this.logger,
       },
       this.options

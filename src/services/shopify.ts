@@ -21,15 +21,13 @@ import {
   ShopifyImportRequest,
   ShopifyRequest,
 } from "interfaces/shopify-interfaces";
-import { MedusaError } from "medusa-core-utils";
 import { EntityManager } from "typeorm";
 import { INCLUDE_PRESENTMENT_PRICES } from "../utils/const";
 import ShopifyClientService from "./shopify-client";
 import ShopifyCollectionService from "./shopify-collection";
 import ShopifyProductService from "./shopify-product";
 import { ShopifyPath } from "../interfaces/shopify-interfaces";
-import { sleep } from "@medusajs/medusa/dist/utils/sleep";
-
+import { Lifetime } from "awilix";
 export interface ShopifyServiceParams {
   manager: EntityManager;
   eventBusService: EventBusService;
@@ -52,6 +50,7 @@ export type ShopifyBatchTask = {
 export type BatchActionCallBack = (BatchJob) => Promise<any>;
 
 class ShopifyService extends TransactionBaseService {
+  static LIFE_TIME = Lifetime.TRANSIENT;
   storeRepository: typeof StoreRepository;
   options: ClientOptions;
   shippingProfileService_: ShippingProfileService;
