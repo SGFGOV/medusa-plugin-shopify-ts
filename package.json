@@ -1,6 +1,6 @@
 {
   "name": "medusa-plugin-shopify-ts",
-  "version": "3.5.15",
+  "version": "3.5.16",
   "description": "A plugin to pull from shopify store",
   "main": "index.js",
   "types": "index.d.ts",
