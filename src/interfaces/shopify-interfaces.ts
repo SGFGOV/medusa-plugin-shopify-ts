@@ -37,6 +37,9 @@ export type ClientOptions =
     };
 
 export interface ShopifyFetchRequest {
+  enable_vendor_store?: boolean;
+  auto_create_store?: string;
+  overwrite_on_import?: boolean;
   requestId: string;
   api_key: string;
   store_domain: string;

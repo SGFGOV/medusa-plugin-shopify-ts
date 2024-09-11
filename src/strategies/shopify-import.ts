@@ -181,7 +181,9 @@ class ShopifyImportStrategy extends AbstractBatchJobStrategy {
       });
       return Promise.all(result);
     } else {
-      const storeId = await this.fetchStore();
+      const storeId = await this.fetchStore(
+        shopifyImportRequest.default_store_name
+      );
       const storeCollectionResult =
         await this.addProductsToMedusaStoreCollection(
           collectionType,
@@ -355,7 +357,8 @@ class ShopifyImportStrategy extends AbstractBatchJobStrategy {
         } else {
           const result = await this.productProcessor(
             products,
-            productInputListCount
+            productInputListCount,
+            shopifyImportRequest
           );
           if (result) {
             productCreateCount++;
@@ -373,16 +376,20 @@ class ShopifyImportStrategy extends AbstractBatchJobStrategy {
 
   async productProcessor(
     products: ShopifyProducts,
-    productInputListCount: number
+    productInputListCount: number,
+    shopifyImportRequest?: ShopifyImportRequest
   ): Promise<Product> {
     const product = products[productInputListCount];
     this.logger.info(
       `creating product  ${productInputListCount}` +
         `/${products.length} ${products[productInputListCount].handle}`
     );
-
-    const store_id = await this.fetchStore(product.vendor);
-
+    let store_id: string;
+    if (!shopifyImportRequest.enable_vendor_store) {
+      store_id = await this.fetchStore(product.vendor);
+    } else {
+      store_id = await this.fetchStore(shopifyImportRequest.default_store_name);
+    }
     const result = await this.atomicPhase_(async (transactionManager) => {
       return await this.shopifyService_.shopifyProductService_
         .withTransaction(transactionManager)
