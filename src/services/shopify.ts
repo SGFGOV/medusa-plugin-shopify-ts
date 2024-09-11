@@ -183,8 +183,23 @@ class ShopifyService extends TransactionBaseService {
     userId?: string,
     gotPageCallBack?: ShopifyImportCallBack
   ): Promise<ShopifyData> {
-    const client_ = this.shopifyClientService_;
-
+    let client_: ShopifyClientService;
+    if (!shopifyRequest.api_key || !shopifyRequest.store_domain) {
+      client_ = this.shopifyClientService_;
+    } else {
+      client_ = new ShopifyClientService(
+        {
+          manager: this.manager_,
+          eventBusService: this.eventBus_,
+          logger: this.logger,
+        },
+        {
+          ...this.options,
+          api_key: shopifyRequest.api_key,
+          store_domain: shopifyRequest.store_domain,
+        }
+      );
+    }
     const updatedSinceQuery = await this.getAndUpdateBuildTime_(
       shopifyRequest.default_store_name
     );
@@ -205,7 +220,7 @@ class ShopifyService extends TransactionBaseService {
   }
 
   async importIntoStore(
-    shopifyImportRequest: ShopifyImportRequest,
+    shopifyImportRequest: ShopifyRequest,
     defaultJobNotifier?: BatchActionCallBack
   ): Promise<boolean | FetchedShopifyData> {
     const adminUser = await this.atomicPhase_(async (transactionManager) => {

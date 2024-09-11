@@ -52,7 +52,9 @@ export interface ShopifyImportRequest extends ShopifyFetchRequest {
   shopify_product_ids?: string[];
 }
 
-export type ShopifyRequest = ShopifyFetchRequest & ShopifyImportRequest;
+export type ShopifyRequest = ShopifyFetchRequest &
+  ShopifyImportRequest &
+  ClientOptions;
 
 /**
  * data fetched from shopify
