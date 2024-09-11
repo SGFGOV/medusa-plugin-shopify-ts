@@ -17,17 +17,17 @@ Nothing much here, just install the plugin like any other plugin,
 yarn add medusa-plugin-shopify-ts
 ```
 ```
-In medusa-config.js
+// In medusa-config.js
 
 {
     resolve:'medusa-plugin-shopify-ts'
     options:{
-        api_key : #"<Your default shopify private app admin api key>}
-        store_domain: #"<Your default shopify domain without the myshopify.com part for example :abc.myshopify.com will be abc>"
+        api_key : #"<Your default shopify private app admin api key>
+        store_domain: #"<Your default shopify domain without the myshopify.com part for example :abc.myshopify.com will be abc>",
         default_store_name: #"default_store_name"
-
+        }
     }
-}
+
 
 ```
 
@@ -35,31 +35,68 @@ In medusa-config.js
 
 This plugin takes advantage of the event bus system that medusa offers, So the best way to trigger the sync is to listen for the event, and resolve the shopify service and call sync. Here is a simplified implementation of how you can do this 
 
+You need to define this function in any service that imports the shopifyService
 ```
-async syncWithShopify(): Promise<boolean> {
-        // return true;
-        await this.shopifyService_
-            .withTransaction(this.manager_)
-            .importIntoStore(
-                {
-                    ...this.shopifyService_.options /* default store */,
-                    enable_vendor_store: true,
-                    auto_create_store: true,
-                    medusa_store_admin_email:
-                        this.configModule.projectConfig.secureKeys
-                            .ADMIN_EMAIL ?? "admin@testwebsite.com"
-                },
-                (job: BatchJob): Promise<void> => {
-                    this.logger.info(`${job.id} created`);
-                    return;
+async syncWithShopify(
+        clientOptions?: Partial<ClientOptions>,
+        requesterEmail?: string
+    ): Promise<boolean> {
+        return await this.atomicPhase_(async (manager) => {
+            // return true;
+            const importOptions: ClientOptions = {
+                ...this.shopifyService_.options /* default store */,
+                ...(clientOptions ?? {}), /*options passed to create local client. This client overrides the global client*/
+
+                enable_vendor_store:
+                    clientOptions?.enable_vendor_store ?? false, // enable to automatically create stores from vendor names
+                auto_create_store: clientOptions?.auto_create_store ?? false,
+                medusa_store_admin_email:
+                    requesterEmail ?? this.serviceAccount.email,
+                handleMetafields: async (
+                    container: MedusaContainer,
+                    product: Product,
+                    metafields: Record<string, any>
+                ) => {
+                    const productService = container.resolve(
+                        "productService"
+                    ) as ProductService;
+                    const productToUpdate = await productService.retrieve(
+                        product.id
+                    );
+                    const updatedProduct = await productService.update(
+                        productToUpdate.id,
+                        {
+                            metadata: {
+                                ...productToUpdate.metadata,
+                                imported_metadata: metafields
+                            }
+                        }
+                    );
                 }
-            );
-        await this.atomicPhase_(async (manager) => {
-            return await this.eventBusService
+            };
+            await this.shopifyService_
                 .withTransaction(manager)
-                .emit("medusa.shopify.sync.completed", {});
+                .importIntoStore(
+                    importOptions,
+                    (job: BatchJob): Promise<void> => {
+                        this.logger.info(
+                            `${
+                                job.id
+                            } created with import options ${JSON.stringify(
+                                importOptions
+                            )}`
+                        );
+                        return;
+                    }
+                );
+
+            await this.atomicPhase_(async (manager) => {
+                return await this.eventBusService
+                    .withTransaction(manager)
+                    .emit("medusa.shopify.sync.completed", {});
+            });
+            return true;
         });
-        return true;
     }
 
 ```
@@ -121,33 +158,8 @@ class PostStartupActionService extends TransactionBaseService {
 
         return cloned as this;
     }
-
-    async syncWithShopify(): Promise<boolean> {
-        // return true;
-        await this.shopifyService_
-            .withTransaction(this.manager_)
-            .importIntoStore(
-                {
-                    ...this.shopifyService_.options /* default store */,
-                    enable_vendor_store: true,
-                    auto_create_store: true,
-                    medusa_store_admin_email:
-                        this.configModule.projectConfig.secureKeys
-                            .ADMIN_EMAIL ?? "admin@testwebsite.com"
-                },
-                (job: BatchJob): Promise<void> => {
-                    this.logger.info(`${job.id} created`);
-                    return;
-                }
-            );
-        await this.atomicPhase_(async (manager) => {
-            return await this.eventBusService
-                .withTransaction(manager)
-                .emit("medusa.shopify.sync.completed", {});
-        });
-        return true;
+        // define syncWithShopify as shown above here <---->
     }
-}
 
 export default PostStartupActionService;
 ```

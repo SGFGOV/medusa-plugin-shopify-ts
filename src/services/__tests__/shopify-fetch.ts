@@ -10,6 +10,7 @@ import {
 } from "../__helpers__/test-helpers";
 import Redis from "ioredis-mock";
 import ShopifyService from "services/shopify";
+import { ShopifyRequest } from "../../interfaces/shopify-interfaces";
 
 describe("ShopifyService", () => {
   describe("Testing Shopify Service", () => {
@@ -31,7 +32,7 @@ describe("ShopifyService", () => {
 
       const clientOptions = getOptionsConfig(max_num);
 
-      const shopifyFetchRequest: ShopifyFetchRequest = {
+      const shopifyFetchRequest: ShopifyRequest = {
         ...clientOptions,
         requestId: "testFetchRequest",
       };
