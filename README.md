@@ -48,8 +48,9 @@ async syncWithShopify(
                 ...(clientOptions ?? {}), /*options passed to create local client. This client overrides the global client*/
 
                 enable_vendor_store:
-                    clientOptions?.enable_vendor_store ?? false, // enable to automatically create stores from vendor names
-                auto_create_store: clientOptions?.auto_create_store ?? false,
+                    clientOptions?.enable_vendor_store ?? false, // enable to automatically create vendor stores
+                   // names  either from the default vendor store name (logged in active store in the admin) or for // vendors as defined as product vendor in the product
+                auto_create_store: clientOptions?.auto_create_store ?? false, // to create stores from product vendor, this is useful to migrate a multivendor store.
                 medusa_store_admin_email:
                     requesterEmail ?? this.serviceAccount.email,
                 handleMetafields: async (
