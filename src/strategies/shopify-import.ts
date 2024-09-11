@@ -232,18 +232,20 @@ class ShopifyImportStrategy extends AbstractBatchJobStrategy {
       } catch (e) {
         this.logger.warn(`${vendor} store doesn't exist`);
       }
-
-      if (!store_id && this.shopifyService_.options.auto_create_store) {
-        let store = await this.storeService.create();
-        store = await this.storeService.update({
-          name: vendor,
-          id: store.id,
-        } as any);
-        store_id = store.id;
-      } else {
-        throw new Error(
-          "trying to import products for a vendor who isn't available"
-        );
+      if (!store_id) {
+        if (this.shopifyService_.options.auto_create_store) {
+          let store = await this.storeService.create();
+          store = await this.storeService.update({
+            name: vendor,
+            id: store.id,
+          } as any);
+          store_id = store.id;
+        } else {
+          throw new Error(
+            "trying to import products for a vendor who isn't available. " +
+              "Please enable auto store creation or provide the name of a store that exists"
+          );
+        }
       }
     } else {
       store_id = (
