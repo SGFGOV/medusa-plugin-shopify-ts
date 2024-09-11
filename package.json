@@ -7,7 +7,7 @@
   "License": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/SGFGOV/medusa-plugin-shopify-ts"
+    "url": "git+https://github.com/SGFGOV/medusa-plugin-shopify-ts.git"
   },
   "keywords": [
     "medusa",
@@ -21,7 +21,7 @@
   "author": "Govind Diwakar <govind.diwakar@gmail.com>",
   "license": "GPL",
   "scripts": {
-    "clean": "./node_modules/.bin/rimraf __test-helpers__/ services/ models/ migrations/ api/ subscribers/ interfaces/ strategies/ utils/ repositories/ loaders/ index.js index.map.js",
+    "clean": "rimraf __test-helpers__/ services/ models/ migrations/ api/ subscribers/ interfaces/ strategies/ utils/ repositories/ loaders/ index.js index.map.js",
     "build": "npm run clean && tsc -p tsconfig.json",
     "watch": "tsc --watch",
     "test": "jest"

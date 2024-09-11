@@ -385,10 +385,21 @@ class ShopifyImportStrategy extends AbstractBatchJobStrategy {
         `/${products.length} ${products[productInputListCount].handle}`
     );
     let store_id: string;
-    if (!shopifyImportRequest.enable_vendor_store) {
+    if (
+      shopifyImportRequest.enable_vendor_store &&
+      shopifyImportRequest.auto_create_store
+    ) {
       store_id = await this.fetchStore(product.vendor);
+    } else if (shopifyImportRequest.enable_vendor_store) {
+      const storeName = shopifyImportRequest.default_store_name;
+      if (!storeName) {
+        throw new Error("Store name is required or disable vendor store");
+      }
+      store_id = await this.fetchStore(storeName);
     } else {
-      store_id = await this.fetchStore(shopifyImportRequest.default_store_name);
+      store_id = await this.fetchStore(
+        this.shopifyService_.options.default_store_name
+      );
     }
     const result = await this.atomicPhase_(async (transactionManager) => {
       return await this.shopifyService_.shopifyProductService_
