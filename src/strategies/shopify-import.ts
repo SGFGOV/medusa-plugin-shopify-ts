@@ -164,16 +164,34 @@ class ShopifyImportStrategy extends AbstractBatchJobStrategy {
         })
       ),
     ];
+    let store_id = "";
+
     if (this.shopifyService_.options.enable_vendor_store) {
       const result = vendors.map(async (vendor) => {
-        const storeId = await this.fetchStore(vendor);
+        if (
+          shopifyImportRequest.enable_vendor_store &&
+          shopifyImportRequest.auto_create_store
+        ) {
+          store_id = await this.fetchStore(vendor);
+        } else if (shopifyImportRequest.enable_vendor_store) {
+          const storeName = shopifyImportRequest.default_store_name;
+          if (!storeName) {
+            throw new Error("Store name is required or disable vendor store");
+          }
+          store_id = await this.fetchStore(storeName);
+        } else {
+          store_id = await this.fetchStore(
+            this.shopifyService_.options.default_store_name
+          );
+        }
+
         const storeProducts = this.resolvedProducts.filter((product) => {
           return product.metadata.vendor == vendor;
         });
         const storeCollectionResult =
           await this.addProductsToMedusaStoreCollection(
             collectionType,
-            storeId,
+            store_id,
             theCollections,
             storeProducts
           );
