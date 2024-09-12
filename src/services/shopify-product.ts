@@ -644,7 +644,7 @@ class ShopifyProductService extends TransactionBaseService {
       images: product.images.map((img) => img.src) || [],
       thumbnail: product.image?.src || null,
       external_id: product.id,
-      status: ProductStatus.PROPOSED,
+      status: ProductStatus.DRAFT,
       metadata: {
         vendor: product.vendor,
       },
